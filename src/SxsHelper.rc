@@ -1,0 +1,170 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "Resource.h"
+#include "windows.h"
+
+/////////////////////////////////////////////////////////////////////////////
+// 中文(中华人民共和国) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+#ifdef _WIN32
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(936)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 0,1,0,1
+ FILEFLAGSMASK 0x17L
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080404b0"
+        BEGIN
+            VALUE "FileDescription", "Sxs封包分析助手"
+            VALUE "LegalCopyright", "蜻蜓特派员 (C) Copyright 2017"
+            VALUE "OriginalFilename", "SxsHelper.exe"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x804, 1200
+    END
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOGEX 0, 0, 182, 70
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "关于"
+FONT 8, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+    DEFPUSHBUTTON   "确定", IDOK, 125, 49, 50, 14
+    CTEXT           "Sxs封包分析助手 v0.1\n\n蜻蜓特派员 (c) Copyright 2017", IDC_STATIC, 7, 15, 114, 31
+    GROUPBOX        "", IDC_STATIC, 7, 7, 115, 56
+END
+
+IDD_MAINDLG DIALOGEX 0, 0, 400, 200
+STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Sxs封包分析助手"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL "", IDC_PKGTREE, "SysTreeView32", TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_CHECKBOXES | TVS_TRACKSELECT | TVS_SINGLEEXPAND | TVS_INFOTIP | TVS_FULLROWSELECT | WS_BORDER | WS_TABSTOP, 0, 0, 400, 200
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE 
+BEGIN
+    IDS_TITLE               "Sxs封包分析助手"
+    IDS_ABOUT               "关于(&A)..."
+    IDS_SOURCE              "请选择操作系统 Windows 目录"
+END
+
+#endif    // 中文(中华人民共和国) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// 英语(美国) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 0,1,0,1
+ FILEFLAGSMASK 0x17L
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "FileDescription", "Sxs Package Helper"
+            VALUE "LegalCopyright", "dragonflyee (C) Copyright 2017"
+            VALUE "OriginalFilename", "SxsHelper.exe"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOGEX 0, 0, 182, 70
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About"
+FONT 8, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+DEFPUSHBUTTON   "OK", IDOK, 125, 49, 50, 14
+    CTEXT           "Sxs Package Helper v0.1\n\ndragonflylee (c) Copyright 2017", IDC_STATIC, 7, 15, 114, 31
+    GROUPBOX        "", IDC_STATIC, 7, 7, 115, 56
+END
+
+IDD_MAINDLG DIALOGEX 0, 0, 400, 200
+STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Sxs Package Helper"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL "", IDC_PKGTREE, "SysTreeView32", TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_CHECKBOXES | TVS_TRACKSELECT | TVS_SINGLEEXPAND | TVS_INFOTIP | TVS_FULLROWSELECT | WS_BORDER | WS_TABSTOP, 0, 0, 400, 200
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE 
+BEGIN
+    IDS_TITLE               "Sxs Package Helper"
+    IDS_ABOUT               "&About..."
+    IDS_SOURCE              "Please select the Windows installation directory"
+END
+
+#endif    // 英语(美国) resources
+/////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+IDI_SXSHELPER             ICON                    "SxsHelper.ico"
