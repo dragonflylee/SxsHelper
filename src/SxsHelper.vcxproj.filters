@@ -24,6 +24,9 @@
     <ClCompile Include="MainDlg.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="SxsScan.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Resource.h">
@@ -32,16 +35,19 @@
     <ClInclude Include="StdAfx.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="StringHelp.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="MainDlg.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="AboutDlg.h">
+    <ClInclude Include="Assembly.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="PkgTree.h">
+    <ClInclude Include="Log.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="FindDlg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="FilterEdit.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

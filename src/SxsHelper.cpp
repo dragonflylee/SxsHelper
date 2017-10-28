@@ -15,10 +15,10 @@ int CALLBACK CheckPath(HWND hWnd, UINT uMsg, LPARAM lParam, LPARAM lpData)
     case BFFM_SELCHANGED:
         LPITEMIDLIST pidlSelected = (LPITEMIDLIST)lParam;
         TCHAR szPath[MAX_PATH] = { 0 };
-        if (SHGetPathFromIDList(pidlSelected, szPath))
+        if (::SHGetPathFromIDList(pidlSelected, szPath))
         {
             ::PathCombine(szPath, szPath, PathRel_Packages);
-            ::SendMessage(hWnd, BFFM_ENABLEOK, NULL, PathIsDirectory(szPath));
+            ::SendMessage(hWnd, BFFM_ENABLEOK, NULL, ::PathIsDirectory(szPath));
         }
         break;
     }
@@ -28,7 +28,9 @@ int CALLBACK CheckPath(HWND hWnd, UINT uMsg, LPARAM lParam, LPARAM lpData)
 BOOL SelectFolder(LPTSTR szFolder)
 {
     BOOL bRet = FALSE;
-    CStr szTitle = CStr::Load(IDS_SOURCE);
+    CAtlString szTitle;
+    szTitle.LoadString(IDS_SOURCE);
+
     BROWSEINFO bi = { 0 };
     bi.hwndOwner = HWND_DESKTOP;
     bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_DONTGOBELOWDOMAIN | BIF_NONEWFOLDERBUTTON;
@@ -50,31 +52,39 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     LPTSTR    lpCmdLine,
     int       nCmdShow)
 {
+    UNREFERENCED_PARAMETER(hPrevInstance);
+    UNREFERENCED_PARAMETER(lpCmdLine);
+
     TCHAR szPath[MAX_PATH] = { 0 };
-    ::GetWindowsDirectory(szPath, sizeof(szPath));
-
-    //if (!SelectFolder(szPath)) return FALSE;
-
+    ::GetWindowsDirectory(szPath, _countof(szPath));
+#ifndef _DEBUG
+    if (!SelectFolder(szPath)) return FALSE;
+#endif
     HRESULT hr = ::CoInitialize(NULL);
     ATLASSERT(SUCCEEDED(hr));
 
     ::DefWindowProc(NULL, 0, 0, 0L);
-    ::InitCommonControls();
 
     hr = _Module.Init(NULL, hInstance);
     ATLASSERT(SUCCEEDED(hr));
 
     ::PathCombine(szPath, szPath, PathRel_Packages);
-    CComObject<CMainDlg> dlgMain;
-    HWND hDlg = dlgMain.Create(HWND_DESKTOP, (LPARAM)szPath);
+    CMainDlg dlgMain(szPath);
+    RECT rc = {0, 0, 600, 500};
 
-    dlgMain.ShowWindow(SW_SHOWDEFAULT);
+    CAtlString szTitle;
+    szTitle.LoadString(IDS_TITLE);
+    HWND hWnd = dlgMain.Create(HWND_DESKTOP, rc, szTitle);
+
+    dlgMain.ShowWindow(nCmdShow);
+
+    HACCEL hAccMain = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDR_MAINFRAME));
 
     // 主消息循环:
     MSG msg;
     while (::GetMessage(&msg, NULL, 0, 0))
     {
-        if (!::IsDialogMessage(hDlg, &msg))
+        if (!dlgMain.FindMsg(&msg) && !TranslateAccelerator(hWnd, hAccMain, &msg))
         {
             ::TranslateMessage(&msg);
             ::DispatchMessage(&msg);
@@ -83,6 +93,5 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
     _Module.Term();
     ::CoUninitialize();
-
     return (int)msg.wParam;
 }
