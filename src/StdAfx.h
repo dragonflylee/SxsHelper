@@ -2,8 +2,7 @@
 #define _STDAFX_H_
 
 // ATL м╥нд╪Ч:
-#include <atlbase.h>
-#include <atlstr.h>
+#include <atlimage.h>
 
 extern CComModule _Module;
 
@@ -20,7 +19,6 @@ extern CComModule _Module;
 #include "Log.h"
 #include "Resource.h"
 #include "Assembly.h"
-#include "FilterEdit.h"
 #include "FindDlg.h"
 #include "MainDlg.h"
 

@@ -92,7 +92,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Assembly.h" />
-    <ClInclude Include="FilterEdit.h" />
     <ClInclude Include="FindDlg.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="MainDlg.h" />

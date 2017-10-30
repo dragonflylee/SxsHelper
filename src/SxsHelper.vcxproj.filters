@@ -47,9 +47,6 @@
     <ClInclude Include="FindDlg.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="FilterEdit.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="SxsHelper.rc">

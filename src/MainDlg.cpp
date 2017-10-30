@@ -3,7 +3,10 @@
 UINT CFindDlg::WM_FINDMESSAGE = 0;
 
 CMainDlg::CMainDlg(LPTSTR szPath) :
-m_hThread(NULL), m_hPopup(NULL)
+m_hThread(NULL), 
+m_hMenu(NULL),
+mTree(WC_TREEVIEW, this, 1),
+mFilter(WC_EDIT, this, 2)
 {
     ZeroMemory(&m_szExport, sizeof(m_szExport));
     mRoot = new CAssemblyNode();
@@ -15,20 +18,30 @@ CMainDlg::~CMainDlg()
     
 }
 
+LPCTSTR CMainDlg::GetWndCaption()
+{
+    static CAtlString szTitle;
+    if (szTitle.IsEmpty()) szTitle.LoadString(IDR_MAIN);
+    return szTitle;
+}
+
 LRESULT CMainDlg::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 {
-    RECT rc;
-    GetClientRect(&rc);
-    rc.bottom -= 20;
-    mTree.Create(WC_TREEVIEW, m_hWnd, rc, NULL, CWinTraitsOR<TVS_HASLINES | TVS_HASBUTTONS | TVS_LINESATROOT | TVS_CHECKBOXES>::GetWndStyle(0));
+    mTree.Create(m_hWnd, NULL);
 
-    // 设置对话框的图标
-    HICON hIcon = ::LoadIcon(_Module.GetModuleInstance(), MAKEINTRESOURCE(IDR_MAINFRAME));
+    // 创建 筛选器 控件
+    CAtlString szFilterHint;
+    szFilterHint.LoadString(IDS_FILTERHINT);
+    mFilter.Create(mTree, NULL);
+    mFilter.SendMessage(EM_SETCUEBANNER, TRUE, (LPARAM)(LPCTSTR)szFilterHint);
+
+    // 设置窗体图标
+    HICON hIcon = ::LoadIcon(_Module.GetResourceInstance(), MAKEINTRESOURCE(IDR_MAIN));
     SetIcon(hIcon);
     CenterWindow();
 
     // 加载菜单资源
-    m_hPopup = ::LoadMenu(_Module.GetModuleInstance(), MAKEINTRESOURCE(IDR_POPUP));
+    m_hMenu = ::LoadMenu(_Module.GetResourceInstance(), MAKEINTRESOURCE(IDR_MAIN));
 
     // 设置系统菜单
     HMENU hSysMenu = GetSystemMenu(FALSE);
@@ -64,7 +77,8 @@ LRESULT CMainDlg::OnDestroy(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOO
 
 LRESULT CMainDlg::OnSize(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
 {
-    return mTree.ResizeClient(LOWORD(lParam), HIWORD(lParam));
+    mTree.ResizeClient(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+    return mFilter.SetWindowPos(HWND_TOP, GET_X_LPARAM(lParam) - 150, 0, 150, 20, 0);
 }
 
 LRESULT CMainDlg::OnSysCommand(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& bHandled)
@@ -73,7 +87,7 @@ LRESULT CMainDlg::OnSysCommand(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, 
     {
     case IDM_ABOUT:
     {
-        ATL::CSimpleDialog<IDD_ABOUTBOX> dlgAbout;
+        ATL::CSimpleDialog<IDD_ABOUT> dlgAbout;
         return dlgAbout.DoModal(m_hWnd);
     }
     case SC_CLOSE:
@@ -85,7 +99,7 @@ LRESULT CMainDlg::OnSysCommand(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, 
 }
 
 /**
- * 超找相关逻辑
+ * 查找相关逻辑
  */
 LRESULT CMainDlg::OnFind(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
 {
@@ -101,7 +115,6 @@ LRESULT CMainDlg::OnFind(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& 
     ULONG(WINAPI *fnInc)(LPLONG) = (pfr->Flags & FR_DOWN) ? CComSingleThreadModel::Increment : CComSingleThreadModel::Decrement;
 
     LONG index = (LONG)pfr->lCustData;
-
     if (index >= 0 && index < mMap.GetSize())
     {
         TreeView_SetItemState(mTree, mMap.GetValueAt(index)->Parent.GetValueAt(0), 0, TVIS_BOLD);
@@ -113,15 +126,23 @@ LRESULT CMainDlg::OnFind(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& 
 
     while (fnInc(&index) < (ULONG)mMap.GetSize() && index >= 0)
     {
+        HTREEITEM hItem = mMap.GetValueAt(index)->Parent.GetValueAt(0);
+
         if (fnStr(mMap.GetKeyAt(index), pfr->lpstrFindWhat) != NULL)
-        {
-            HTREEITEM hItem = mMap.GetValueAt(index)->Parent.GetValueAt(0);
+        { 
             pfr->lCustData = index;
             TreeView_SetItemState(mTree, hItem, TVIS_BOLD, TVIS_BOLD);
             return TreeView_SelectItem(mTree, hItem);
         }
+
+        TreeView_SetItemState(mTree, hItem, 0, TVIS_BOLD);
+        TreeView_Expand(mTree, hItem, TVE_COLLAPSE);
     }
-    return FALSE;
+
+    // 提示没有找到
+    CAtlString szEnd;
+    szEnd.Format(IDS_FINDEND, pfr->lpstrFindWhat);
+    return MessageBox(szEnd, CMainDlg::GetWndCaption(), MB_ICONWARNING);
 }
 
 LRESULT CMainDlg::OnFindNext(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& bHandled)
@@ -203,7 +224,14 @@ LRESULT CMainDlg::OnContext(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/
     POINT pt = { 0 };
     // 弹出右键菜单
     ::GetCursorPos(&pt);
-    return ::TrackPopupMenu(::GetSubMenu(m_hPopup, 0), TPM_LEFTALIGN | TPM_LEFTBUTTON, pt.x, pt.y, 0, m_hWnd, NULL);
+    return ::TrackPopupMenu(::GetSubMenu(m_hMenu, 0), TPM_LEFTALIGN | TPM_LEFTBUTTON, pt.x, pt.y, 0, m_hWnd, NULL);
+}
+
+LRESULT CMainDlg::OnTreeEraseBK(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
+{
+    bHandled = FALSE;
+    mFilter.UpdateWindow();
+    return TRUE;
 }
 
 /**
@@ -232,8 +260,8 @@ void RecurveExport(CAssemblyNode *pParent, HANDLE hFile)
 LRESULT CMainDlg::OnExport(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
     CAtlString szTitle, szFilter;
-    szTitle.LoadString(IDS_NAMESAVE);
-    szFilter.LoadString(IDS_NAMEFILTER);
+    szTitle.LoadString(IDS_SAVEPATH);
+    szFilter.LoadString(IDS_SAVEFILTER);
     szFilter.Replace(TEXT('|'), TEXT('\0'));
    
     OPENFILENAME ofn = { sizeof(OPENFILENAME) };
@@ -276,14 +304,39 @@ LRESULT CMainDlg::OnFresh(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, 
     return TRUE;
 }
 
+LRESULT CMainDlg::OnFilterChar(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& bHandled)
+{
+    if (VK_RETURN == wParam)
+    {
+        CAtlString szFind;
+        mFilter.GetWindowText(szFind);
+        for (int i = 0; i < mMap.GetSize(); i++)
+        {
+            HTREEITEM hItem = mMap.GetValueAt(i)->Parent.GetValueAt(0);
+            if (::StrStrI(mMap.GetKeyAt(i), szFind) != NULL)
+            {
+                TreeView_SetItemState(mTree, hItem, TVIS_BOLD, TVIS_BOLD);
+                TreeView_EnsureVisible(mTree, hItem);
+            }
+            else
+            {
+                TreeView_SetItemState(mTree, hItem, 0, TVIS_BOLD);
+                TreeView_Expand(mTree, hItem, TVE_COLLAPSE);
+            }
+        }
+        return TRUE;
+    }
+    bHandled = FALSE;
+    return TRUE;
+}
+
 BOOL CMainDlg::IsWorking()
 {
     if (NULL != m_hThread && ::WaitForSingleObject(m_hThread, 0) == WAIT_TIMEOUT)
     {
-        CAtlString szTitle, szText;
-        szTitle.LoadString(IDS_TITLE);
+        CAtlString szText;
         szText.LoadString(IDS_BUSY);
-        return MessageBox(szText, szTitle, MB_ICONWARNING);
+        return MessageBox(szText, CMainDlg::GetWndCaption(), MB_ICONWARNING);
     }
     return FALSE;
 }

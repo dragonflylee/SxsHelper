@@ -59,12 +59,12 @@ END
 // Dialog
 //
 
-IDD_ABOUTBOX DIALOGEX 0, 0, 182, 70
+IDD_ABOUT DIALOGEX 0, 0, 182, 70
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "关于"
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
-    ICON            IDR_MAINFRAME, IDC_STATIC, 140, 20, 60, 60
+    ICON            IDR_MAIN, IDC_STATIC, 140, 20, 60, 60
     DEFPUSHBUTTON   "确定", IDOK, 125, 47, 50, 15
     LTEXT           "Sxs封包分析助手 v", IDC_STATIC, 13, 20, 75, 15
     LTEXT           VER_FULL, IDC_STATIC, 80, 20, 25, 15
@@ -77,7 +77,7 @@ END
 // Menu
 //
 
-IDR_POPUP MENU
+IDR_MAIN MENU
 BEGIN
     POPUP "RCLICK"
     BEGIN
@@ -94,12 +94,14 @@ END
 
 STRINGTABLE 
 BEGIN
-    IDS_TITLE               "Sxs封包分析助手"
+    IDR_MAIN                "Sxs封包分析助手"
     IDS_ABOUT               "关于(&A)..."
     IDS_SOURCE              "请选择操作系统 Windows 目录"
     IDS_BUSY                "扫描正在进行中，请稍后..."
-    IDS_NAMESAVE            "请选择包名列表保存路径"
-    IDS_NAMEFILTER          "文本文件 (*.txt)|*.txt|所有文件 (*.*)|*.*|"
+    IDS_SAVEPATH            "请选择包名列表保存路径"
+    IDS_SAVEFILTER          "文本文件 (*.txt)|*.txt|所有文件 (*.*)|*.*|"
+    IDS_FILTERHINT          "请输入关键字"
+    IDS_FINDEND             "找不到 %s"
 END
 
 #endif    // 中文(中华人民共和国) resources
@@ -153,12 +155,12 @@ END
 // Dialog
 //
 
-IDD_ABOUTBOX DIALOGEX 0, 0, 182, 70
+IDD_ABOUT DIALOGEX 0, 0, 182, 70
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "About"
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
-    ICON            IDR_MAINFRAME, IDC_STATIC, 140, 20, 60, 60
+    ICON            IDR_MAIN, IDC_STATIC, 140, 20, 60, 60
     DEFPUSHBUTTON   "OK", IDOK, 125, 47, 50, 15
     LTEXT           "Sxs Package Helper v", IDC_STATIC, 13, 20, 75, 15
     LTEXT           VER_FULL, IDC_STATIC, 80, 20, 25, 15
@@ -171,7 +173,7 @@ END
 // Menu
 //
 
-IDR_POPUP MENU
+IDR_MAIN MENU
 BEGIN
     POPUP "RCLICK"
     BEGIN
@@ -188,12 +190,14 @@ END
 
 STRINGTABLE 
 BEGIN
-    IDS_TITLE               "Sxs Package Helper"
+    IDR_MAIN                "Sxs Package Helper"
     IDS_ABOUT               "&About..."
     IDS_SOURCE              "Please select the Windows installation directory"
     IDS_BUSY                "Program is working, please wait a moment"
-    IDS_NAMESAVE            "Please select save path of package name list"
-    IDS_NAMEFILTER          "Text file (*.txt)|*.txt|All files (*.*)|*.*|"
+    IDS_SAVEPATH            "Please select save path of package name list"
+    IDS_SAVEFILTER          "Text file (*.txt)|*.txt|All files (*.*)|*.*|"
+    IDS_FILTERHINT          "Please enter keyword"
+    IDS_FINDEND             "Can't find %s"
 END
 
 /////////////////////////////////////////////////////////////////////////////
@@ -201,7 +205,7 @@ END
 // Accelerator
 //
 
-IDR_MAINFRAME ACCELERATORS
+IDR_MAIN ACCELERATORS
 BEGIN
     "S", IDM_EXPORT, VIRTKEY, CONTROL, NOINVERT
     "F", IDM_SEARCH, VIRTKEY, CONTROL, NOINVERT
@@ -214,7 +218,7 @@ END
 //
 // Icon
 //
-IDR_MAINFRAME             ICON                    "SxsHelper.ico"
+IDR_MAIN             ICON                    "SxsHelper.ico"
 
 #endif    // 英语(美国) resources
 /////////////////////////////////////////////////////////////////////////////

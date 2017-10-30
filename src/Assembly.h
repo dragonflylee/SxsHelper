@@ -32,10 +32,6 @@ private:
 
 public:
     CAssemblyNode() : m_lRes(0), bCheck(FALSE) {}
-    virtual ~CAssemblyNode()
-    {
-        ATLTRACE(_T("%s\n"), name);
-    }
 };
 
 #endif // _ASSEMBLY_TREE_H_

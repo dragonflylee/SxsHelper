@@ -70,15 +70,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
     ::PathCombine(szPath, szPath, PathRel_Packages);
     CMainDlg dlgMain(szPath);
-    RECT rc = {0, 0, 600, 500};
+    RECT rcWnd = {0, 0, 600, 500};
 
-    CAtlString szTitle;
-    szTitle.LoadString(IDS_TITLE);
-    HWND hWnd = dlgMain.Create(HWND_DESKTOP, rc, szTitle);
+    HWND hWnd = dlgMain.Create(HWND_DESKTOP, rcWnd);
 
     dlgMain.ShowWindow(nCmdShow);
 
-    HACCEL hAccMain = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDR_MAINFRAME));
+    HACCEL hAccMain = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDR_MAIN));
 
     // 主消息循环:
     MSG msg;

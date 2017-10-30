@@ -21,9 +21,14 @@ public:
         COMMAND_ID_HANDLER(IDM_FINDPREV, OnFindPrev)
         NOTIFY_CODE_HANDLER(TVN_ITEMCHANGED, OnItemChange)
         NOTIFY_CODE_HANDLER(NM_RCLICK, OnContext)
+    ALT_MSG_MAP(1)
+        MESSAGE_HANDLER(WM_ERASEBKGND, OnTreeEraseBK)
+    ALT_MSG_MAP(2)
+        MESSAGE_HANDLER(WM_CHAR, OnFilterChar)
     END_MSG_MAP()
 
 public:
+    static LPCTSTR GetWndCaption();
     /**
     * 对话框相关
     */
@@ -37,6 +42,7 @@ public:
     */
     LRESULT OnItemChange(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
     LRESULT OnContext(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
+    LRESULT OnTreeEraseBK(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
     /**
     * 菜单事件
     */
@@ -45,6 +51,10 @@ public:
     LRESULT OnFresh(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
     LRESULT OnFindNext(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
     LRESULT OnFindPrev(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+    /**
+    * 筛选器事件
+    */
+    LRESULT OnFilterChar(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 
     // 查找对话框处理
     inline BOOL FindMsg(LPMSG lpMsg) { return mFind.IsWindow() && mFind.IsDialogMessage(lpMsg); }
@@ -67,11 +77,12 @@ protected:
 
 private:
     HANDLE m_hThread;
-    HMENU m_hPopup;
+    HMENU m_hMenu;
     TCHAR m_szExport[MAX_PATH];
-  
-    CWindow mTree;
+
     CFindDlg mFind;
+    CContainedWindowT<CWindow, CWinTraitsOR<TVS_HASLINES | TVS_HASBUTTONS | TVS_LINESATROOT | TVS_CHECKBOXES> > mTree;
+    CContainedWindowT<CWindow, CWinTraitsOR<ES_AUTOHSCROLL, WS_EX_CLIENTEDGE> > mFilter;
 
     CAssemblyMap mMap;
     CComPtr<CAssemblyNode> mRoot;
