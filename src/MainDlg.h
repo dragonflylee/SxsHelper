@@ -22,7 +22,6 @@ public:
         NOTIFY_CODE_HANDLER(TVN_ITEMCHANGED, OnItemChange)
         NOTIFY_CODE_HANDLER(NM_RCLICK, OnContext)
     ALT_MSG_MAP(1)
-        MESSAGE_HANDLER(WM_ERASEBKGND, OnTreeEraseBK)
     ALT_MSG_MAP(2)
         MESSAGE_HANDLER(WM_CHAR, OnFilterChar)
     END_MSG_MAP()
@@ -42,7 +41,6 @@ public:
     */
     LRESULT OnItemChange(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
     LRESULT OnContext(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
-    LRESULT OnTreeEraseBK(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
     /**
     * ²Ëµ¥ÊÂ¼þ
     */

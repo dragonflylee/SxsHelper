@@ -227,13 +227,6 @@ LRESULT CMainDlg::OnContext(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/
     return ::TrackPopupMenu(::GetSubMenu(m_hMenu, 0), TPM_LEFTALIGN | TPM_LEFTBUTTON, pt.x, pt.y, 0, m_hWnd, NULL);
 }
 
-LRESULT CMainDlg::OnTreeEraseBK(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
-{
-    bHandled = FALSE;
-    mFilter.UpdateWindow();
-    return TRUE;
-}
-
 /**
 * 递归导出包名列表
 */
@@ -247,8 +240,8 @@ void RecurveExport(CAssemblyNode *pParent, HANDLE hFile)
 
         if (pNode->bCheck)
         {
-            int nLen = sprintf_s(szName, _countof(szName), "%ws\r\n", (LPCTSTR)pNode->name);
-            ::WriteFile(hFile, szName, nLen, NULL, NULL);
+            DWORD cbLen = (DWORD)sprintf_s(szName, _countof(szName), "%ws\r\n", (LPCTSTR)pNode->name);
+            ::WriteFile(hFile, szName, cbLen, &cbLen, NULL);
         }
         else if (pNode->Package.GetSize() > 0)
         {
