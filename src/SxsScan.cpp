@@ -110,7 +110,7 @@ void CMainDlg::RecurveInsert(HTREEITEM hParent, CAssemblyNode *pParent)
         {
             tvi.item.pszText = pNode->name.GetBuffer();
             tvi.item.lParam = (LPARAM)pNode;
-            HTREEITEM hItem = TreeView_InsertItem(mTree, &tvi);
+            HTREEITEM hItem = TreeView_InsertItem(m_tree, &tvi);
             pNode->Parent.SetAt(pParent, hItem);
             // 添加到搜索容器
             mMap.Add(pNode->name, pNode);
@@ -132,7 +132,7 @@ DWORD CALLBACK CMainDlg::ThreadScan(LPVOID lpParam)
     WIN32_FIND_DATA wfd = { 0 };
     CAssemblyMap dict;
     
-    HRESULT hr = ::CoInitialize(NULL);
+    HRESULT hr = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
     HR_CHECK(hr);
 
     // 初始化 XML 对象
@@ -142,7 +142,7 @@ DWORD CALLBACK CMainDlg::ThreadScan(LPVOID lpParam)
     // 开始遍历文件
     ::PathCombine(szSearch, pDlg->mRoot->name, TEXT("*Package*~*~~*.mum"));
     hFind = ::FindFirstFile(szSearch, &wfd);
-    HANDLE_CHECK(hFind);
+    HR_CHECK(INVALID_HANDLE_VALUE  != hFind);
              
     do
     {
@@ -156,7 +156,7 @@ DWORD CALLBACK CMainDlg::ThreadScan(LPVOID lpParam)
             hr = pXml->get_documentElement(&pRoot);
             if (SUCCEEDED(hr) && pRoot != NULL)
             {
-                CComPtr<CAssemblyNode> pAssembly = new CAssemblyNode();
+                CComPtr<CAssemblyNode> pAssembly = new CComObject<CAssemblyNode>();
                 if (SUCCEEDED(FindSingle(pRoot, L"//assembly/assemblyIdentity", pAssembly)))
                 {
                     FindList(pRoot, L"//assembly/package/parent/assemblyIdentity", pAssembly->Depend);
@@ -201,11 +201,11 @@ DWORD CALLBACK CMainDlg::ThreadScan(LPVOID lpParam)
     tvi.item.pszText = pDlg->mRoot->name.GetBuffer();
     tvi.item.lParam = (LPARAM)(CAssemblyNode *)pDlg->mRoot;
 
-    HTREEITEM hRoot = TreeView_InsertItem(pDlg->mTree, &tvi);
+    HTREEITEM hRoot = TreeView_InsertItem(pDlg->m_tree, &tvi);
     pDlg->RecurveInsert(hRoot, pDlg->mRoot);
 
-    TreeView_SetItemState(pDlg->mTree, hRoot, 0, TVIS_STATEIMAGEMASK);
-    TreeView_Expand(pDlg->mTree, hRoot, TVE_EXPAND);
+    TreeView_SetItemState(pDlg->m_tree, hRoot, 0, TVIS_STATEIMAGEMASK);
+    TreeView_Expand(pDlg->m_tree, hRoot, TVE_EXPAND);
 
 exit:
     if (INVALID_HANDLE_VALUE != hFind) ::FindClose(hFind);

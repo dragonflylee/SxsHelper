@@ -1,7 +1,5 @@
 #include "StdAfx.h"
 
-const LPTSTR PathRel_Packages = TEXT("Servicing\\Packages");
-
 int CALLBACK CheckPath(HWND hWnd, UINT uMsg, LPARAM lParam, LPARAM lpData)
 {
     switch (uMsg)
@@ -17,7 +15,7 @@ int CALLBACK CheckPath(HWND hWnd, UINT uMsg, LPARAM lParam, LPARAM lpData)
         TCHAR szPath[MAX_PATH] = { 0 };
         if (::SHGetPathFromIDList(pidlSelected, szPath))
         {
-            ::PathCombine(szPath, szPath, PathRel_Packages);
+            ::PathCombine(szPath, szPath, TEXT("Servicing\\Packages"));
             ::SendMessage(hWnd, BFFM_ENABLEOK, NULL, ::PathIsDirectory(szPath));
         }
         break;
@@ -42,9 +40,43 @@ BOOL SelectFolder(LPTSTR szFolder)
     if (NULL != pidlSelected)
     {
         bRet = ::SHGetPathFromIDList(pidlSelected, szFolder);
-        CoTaskMemFree(pidlSelected);
+        ::CoTaskMemFree(pidlSelected);
     }
     return bRet;
+}
+
+int Run(HINSTANCE hInst, int nCmdShow)
+{
+    CAtlString szText;
+    ::GetWindowsDirectory(szText.GetBufferSetLength(MAX_PATH), MAX_PATH);
+#ifndef _DEBUG
+    if (!SelectFolder(szText.GetBuffer(MAX_PATH))) return FALSE;
+#endif
+    szText.ReleaseBuffer();
+
+    CMainDlg wndMain(szText);
+    HWND hWnd = wndMain.Create(HWND_DESKTOP);
+    if (NULL == hWnd)
+    {
+        szText.Format(IDS_ERROR, ::GetLastError());
+        return wndMain.MessageBox(szText, CMainDlg::GetWndCaption(), MB_ICONERROR);
+    }
+    wndMain.ShowWindow(nCmdShow);
+
+    HACCEL hAccMain = ::LoadAccelerators(hInst, MAKEINTRESOURCE(IDR_MAIN));
+    ATLASSERT(hAccMain);
+
+    // 主消息循环:
+    MSG msg;
+    while (::GetMessage(&msg, NULL, 0, 0))
+    {
+        if (!wndMain.FindMsg(&msg) && !::TranslateAccelerator(hWnd, hAccMain, &msg))
+        {
+            ::TranslateMessage(&msg);
+            ::DispatchMessage(&msg);
+        }
+    }
+    return (int)msg.wParam;
 }
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
@@ -55,41 +87,24 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    TCHAR szPath[MAX_PATH] = { 0 };
-    ::GetWindowsDirectory(szPath, _countof(szPath));
-#ifndef _DEBUG
-    if (!SelectFolder(szPath)) return FALSE;
-#endif
-    HRESULT hr = ::CoInitialize(NULL);
-    ATLASSERT(SUCCEEDED(hr));
+    HANDLE hMutex = ::CreateMutex(NULL, TRUE, TEXT("CSample"));
+    if (::GetLastError() == ERROR_ALREADY_EXISTS)
+    {
+        CAtlString szText;
+        szText.LoadString(IDS_RUNNING);
+        return ::MessageBox(HWND_DESKTOP, szText, CMainDlg::GetWndCaption(), MB_ICONWARNING);
+    }
 
-    ::DefWindowProc(NULL, 0, 0, 0L);
+    HRESULT hr = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    ATLASSERT(SUCCEEDED(hr));
 
     hr = _Module.Init(NULL, hInstance);
     ATLASSERT(SUCCEEDED(hr));
 
-    ::PathCombine(szPath, szPath, PathRel_Packages);
-    CMainDlg dlgMain(szPath);
-    RECT rcWnd = {0, 0, 600, 500};
-
-    HWND hWnd = dlgMain.Create(HWND_DESKTOP, rcWnd);
-
-    dlgMain.ShowWindow(nCmdShow);
-
-    HACCEL hAccMain = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDR_MAIN));
-
-    // 主消息循环:
-    MSG msg;
-    while (::GetMessage(&msg, NULL, 0, 0))
-    {
-        if (!dlgMain.FindMsg(&msg) && !TranslateAccelerator(hWnd, hAccMain, &msg))
-        {
-            ::TranslateMessage(&msg);
-            ::DispatchMessage(&msg);
-        }
-    }
+    int nRet = Run(hInstance, nCmdShow);
 
     _Module.Term();
     ::CoUninitialize();
-    return (int)msg.wParam;
+    ::CloseHandle(hMutex);
+    return nRet;
 }

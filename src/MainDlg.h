@@ -19,7 +19,8 @@ public:
         COMMAND_ID_HANDLER(IDM_FRESH, OnFresh)
         COMMAND_ID_HANDLER(IDM_FINDNEXT, OnFindNext)
         COMMAND_ID_HANDLER(IDM_FINDPREV, OnFindPrev)
-        NOTIFY_CODE_HANDLER(TVN_ITEMCHANGED, OnItemChange)
+        NOTIFY_CODE_HANDLER(TVN_ITEMCHANGED, OnChanged)
+        NOTIFY_CODE_HANDLER(NM_DBLCLK, OnClick)
         NOTIFY_CODE_HANDLER(NM_RCLICK, OnContext)
     ALT_MSG_MAP(1)
     ALT_MSG_MAP(2)
@@ -39,7 +40,8 @@ public:
     /**
     * TreeView
     */
-    LRESULT OnItemChange(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
+    LRESULT OnChanged(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
+    LRESULT OnClick(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
     LRESULT OnContext(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
     /**
     * ²Ëµ¥ÊÂ¼þ
@@ -76,18 +78,18 @@ protected:
 private:
     HANDLE m_hThread;
     HMENU m_hMenu;
+    HFONT m_hFont;
     TCHAR m_szExport[MAX_PATH];
 
     CFindDlg mFind;
-    CContainedWindowT<CWindow, CWinTraitsOR<TVS_HASLINES | TVS_HASBUTTONS | TVS_LINESATROOT | TVS_CHECKBOXES> > mTree;
-    CContainedWindowT<CWindow, CWinTraitsOR<ES_AUTOHSCROLL, WS_EX_CLIENTEDGE> > mFilter;
+    CContainedWindowT<CWindow, CWinTraitsOR<TVS_HASLINES | TVS_HASBUTTONS | TVS_LINESATROOT | TVS_CHECKBOXES> > m_tree;
+    CContainedWindowT<CWindow, CWinTraitsOR<ES_AUTOHSCROLL, WS_EX_CLIENTEDGE> > m_filter;
 
     CAssemblyMap mMap;
     CComPtr<CAssemblyNode> mRoot;
 
 public:
-    CMainDlg(LPTSTR szPath);
-    virtual ~CMainDlg();
+    CMainDlg(LPCTSTR szPath);
 };
 
 #endif // _MAIN_DLG_H_

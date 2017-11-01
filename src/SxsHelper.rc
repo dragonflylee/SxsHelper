@@ -7,6 +7,7 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
+#include "Version.h"
 #include "winres.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -97,9 +98,10 @@ BEGIN
     IDR_MAIN                "Sxs封包分析助手"
     IDS_ABOUT               "关于(&A)..."
     IDS_SOURCE              "请选择操作系统 Windows 目录"
+    IDS_RUNNING             "貌似另一个我正在运行"
+    IDS_ERROR               "发生了一个致命错误 (%d)"
     IDS_BUSY                "扫描正在进行中，请稍后..."
-    IDS_SAVEPATH            "请选择包名列表保存路径"
-    IDS_SAVEFILTER          "文本文件 (*.txt)|*.txt|所有文件 (*.*)|*.*|"
+    IDS_FILTERSAVE          "文本文件 (*.txt)|*.txt|所有文件 (*.*)|*.*|"
     IDS_FILTERHINT          "请输入关键字"
     IDS_FINDEND             "找不到 %s"
 END
@@ -193,9 +195,10 @@ BEGIN
     IDR_MAIN                "Sxs Package Helper"
     IDS_ABOUT               "&About..."
     IDS_SOURCE              "Please select the Windows installation directory"
+    IDS_RUNNING             "It seems that another me is running"
+    IDS_ERROR               "Oops, critical error happened (%d)"
     IDS_BUSY                "Program is working, please wait a moment"
-    IDS_SAVEPATH            "Please select save path of package name list"
-    IDS_SAVEFILTER          "Text file (*.txt)|*.txt|All files (*.*)|*.*|"
+    IDS_FILTERSAVE          "Text file (*.txt)|*.txt|All files (*.*)|*.*|"
     IDS_FILTERHINT          "Please enter keyword"
     IDS_FINDEND             "Can't find %s"
 END
@@ -236,6 +239,7 @@ END
 
 2 TEXTINCLUDE 
 BEGIN
+    "#include ""Version.h""\r\n"
     "#include ""winres.h""\r\n"
     "\0"
 END

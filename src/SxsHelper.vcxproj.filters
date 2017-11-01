@@ -41,9 +41,6 @@
     <ClInclude Include="Assembly.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Log.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="FindDlg.h">
       <Filter>头文件</Filter>
     </ClInclude>
