@@ -2,31 +2,36 @@
 #define _ASSEMBLY_TREE_H_
 
 class CAssemblyNode;
-typedef ATL::CSimpleMap<CAtlString, CComPtr<CAssemblyNode>> CAssemblyMap;
+typedef ATL::CSimpleMap<CAtlString, CComPtr<CAssemblyNode> > CAssemblyMap;
 typedef ATL::CSimpleMap<CAssemblyNode *, HTREEITEM> CAssemblySet;
 
-class CAssemblyNode : public CComObjectRoot, public IUnknown
+class CAssemblyNode : public IUnknown
 {
 public:
-    CAtlString name;
-    CAtlString publicKeyToken;
-    CAtlString processorArchitecture;
-    CAtlString language;
-    CAtlString version;
-
+    // 封包属性
+    CAtlString szName;
+    CAtlString szArch;
+    CAtlString szLanguage;
+    CAtlString szVersion;
+    CAtlString szToken;
+    // 选中状态
     BOOL bCheck;
-
     CAssemblySet Parent;
     CAssemblyMap Depend;
     CAssemblyMap Package;
     CAssemblyMap Component;
     CAssemblyMap Driver;
 
-    BEGIN_COM_MAP(CAssemblyNode)
-    END_COM_MAP()
+public:
+    STDMETHOD(QueryInterface)(REFIID /*riid*/, void ** /*ppv*/) { return E_NOTIMPL; }
+    STDMETHOD_(ULONG, AddRef)() { return ::InterlockedIncrement(&m_lRes); }
+    STDMETHOD_(ULONG, Release)() { LONG cRef = ::InterlockedDecrement(&m_lRes); if (cRef <= 0) delete this; return cRef; }
+
+private:
+    LONG m_lRes;
 
 public:
-    CAssemblyNode() : bCheck(FALSE) {}
+    CAssemblyNode() : m_lRes(0), bCheck(FALSE) {}
 };
 
 #endif // _ASSEMBLY_TREE_H_

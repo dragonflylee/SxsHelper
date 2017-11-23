@@ -57,7 +57,7 @@ public:
     LRESULT OnFilterChar(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 
     // 查找对话框处理
-    inline BOOL FindMsg(LPMSG lpMsg) { return mFind.IsWindow() && mFind.IsDialogMessage(lpMsg); }
+    inline BOOL FindMsg(LPMSG lpMsg) { return m_find.IsWindow() && m_find.IsDialogMessage(lpMsg); }
 
 protected:
     /**
@@ -81,12 +81,12 @@ private:
     HFONT m_hFont;
     TCHAR m_szExport[MAX_PATH];
 
-    CFindDlg mFind;
+    CFindDlg m_find;
     CContainedWindowT<CWindow, CWinTraitsOR<TVS_HASLINES | TVS_HASBUTTONS | TVS_LINESATROOT | TVS_CHECKBOXES> > m_tree;
     CContainedWindowT<CWindow, CWinTraitsOR<ES_AUTOHSCROLL, WS_EX_CLIENTEDGE> > m_filter;
-
-    CAssemblyMap mMap;
-    CComPtr<CAssemblyNode> mRoot;
+    // 根节点
+    CAssemblyNode nodeRoot;
+    CAssemblyMap mapPackage;
 
 public:
     CMainDlg(LPCTSTR szPath);

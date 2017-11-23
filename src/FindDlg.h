@@ -25,7 +25,7 @@ public:
         memset(&m_szFind, 0, sizeof(m_szFind));
         memset(&m_fr, 0, sizeof(m_fr));
         m_fr.lStructSize = sizeof(FINDREPLACE);
-        m_fr.Flags = FR_NOWHOLEWORD;
+        m_fr.Flags = FR_NOWHOLEWORD | FR_NOUPDOWN;
         m_fr.lpstrFindWhat = m_szFind;
         m_fr.wFindWhatLen = _countof(m_szFind);
     }

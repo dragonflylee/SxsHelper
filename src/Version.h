@@ -8,7 +8,7 @@
 #define VER_MAIN    0  
 #define VER_SUB     1  
 #define VER_SUB2    4 
-#define VER_BUILD   6  
+#define VER_BUILD   8  
 #define VER_FULL    VERTOSTRING(VER_MAIN.VER_SUB.VER_SUB2)
 #define VER_FULL_RC VER_MAIN,VER_SUB,VER_SUB2,VER_BUILD
 

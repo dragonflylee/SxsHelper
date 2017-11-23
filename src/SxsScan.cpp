@@ -1,54 +1,51 @@
 #include "StdAfx.h"
 
 /**
-* 查找单个元素
+* 处理单个元素
 */
-HRESULT FindSingle(IXMLDOMElement* pRoot, BSTR queryString, CAssemblyNode *pAssembly)
+HRESULT CreateNode(IXMLDOMNode *pNode, CAssemblyNode *pAssembly)
 {
-    HRESULT hr = S_OK;
-    CComPtr<IXMLDOMNode> pNode = NULL;
-    CComPtr<IXMLDOMNamedNodeMap> pMap = NULL;
-    CComVariant vbValue = NULL;
-
-    hr = pRoot->selectSingleNode(queryString, &pNode);
-    if (FAILED(hr) || NULL == pNode) return hr;
-
-    hr = pNode->get_attributes(&pMap);
+    CComPtr<IXMLDOMNamedNodeMap> pMap;
+    HRESULT hr = pNode->get_attributes(&pMap);
     if (FAILED(hr) || NULL == pMap) return hr;
 
-    pNode = NULL;
-    hr = pMap->getNamedItem(L"name", &pNode);
-    if (SUCCEEDED(hr) && SUCCEEDED(pNode->get_nodeValue(&vbValue)))
+    CComPtr<IXMLDOMNode> pItem;
+    CComVariant vbValue;
+
+    hr = pMap->getNamedItem(L"name", &pItem);
+    if (SUCCEEDED(hr) && SUCCEEDED(pItem->get_nodeValue(&vbValue)))
     {
-        pAssembly->name = vbValue.bstrVal;
+        pAssembly->szName = vbValue.bstrVal;
+        pItem = NULL;
+    }
+
+    hr = pMap->getNamedItem(L"processorArchitecture", &pItem);
+    if (SUCCEEDED(hr) && SUCCEEDED(pItem->get_nodeValue(&vbValue)))
+    {
+        pAssembly->szArch = vbValue.bstrVal;
+        pItem = NULL;
     }
 
     pNode = NULL;
-    hr = pMap->getNamedItem(L"processorArchitecture", &pNode);
-    if (SUCCEEDED(hr) && SUCCEEDED(pNode->get_nodeValue(&vbValue)))
+    hr = pMap->getNamedItem(L"language", &pItem);
+    if (SUCCEEDED(hr) && SUCCEEDED(pItem->get_nodeValue(&vbValue)))
     {
-        pAssembly->processorArchitecture = vbValue.bstrVal;
+        pAssembly->szLanguage = vbValue.bstrVal;
+        pItem = NULL;
     }
 
-    pNode = NULL;
-    hr = pMap->getNamedItem(L"language", &pNode);
-    if (SUCCEEDED(hr) && SUCCEEDED(pNode->get_nodeValue(&vbValue)))
+    hr = pMap->getNamedItem(L"version", &pItem);
+    if (SUCCEEDED(hr) && SUCCEEDED(pItem->get_nodeValue(&vbValue)))
     {
-        pAssembly->language = vbValue.bstrVal;
+        pAssembly->szVersion = vbValue.bstrVal;
+        pItem = NULL;
     }
 
-    pNode = NULL;
-    hr = pMap->getNamedItem(L"version", &pNode);
-    if (SUCCEEDED(hr) && SUCCEEDED(pNode->get_nodeValue(&vbValue)))
+    hr = pMap->getNamedItem(L"publicKeyToken", &pItem);
+    if (SUCCEEDED(hr) && SUCCEEDED(pItem->get_nodeValue(&vbValue)))
     {
-        pAssembly->version = vbValue.bstrVal;
-    }
-
-    pNode = NULL;
-    hr = pMap->getNamedItem(L"publicKeyToken", &pNode);
-    if (SUCCEEDED(hr) && SUCCEEDED(pNode->get_nodeValue(&vbValue)))
-    {
-        pAssembly->publicKeyToken = vbValue.bstrVal;
+        pAssembly->szToken = vbValue.bstrVal;
+        pItem = NULL;
     }
     return hr;
 }
@@ -56,38 +53,27 @@ HRESULT FindSingle(IXMLDOMElement* pRoot, BSTR queryString, CAssemblyNode *pAsse
 /**
 * 查找多个元素
 */
-HRESULT FindList(IXMLDOMElement* pRoot, BSTR queryString, CAssemblyMap& nodeMap)
+HRESULT CreateList(IXMLDOMElement* pRoot, BSTR queryString, CAssemblyMap& nodeMap)
 {
-    HRESULT hr = S_OK;
-    CComPtr<IXMLDOMNode> pNode = NULL;
-    CComPtr<IXMLDOMNodeList> pList = NULL;
-    CComPtr<IXMLDOMNamedNodeMap> pMap = NULL;
-    CComVariant vbValue = NULL;
-    long length = 0;
-
-    hr = pRoot->selectNodes(queryString, &pList);
+    CComPtr<IXMLDOMNodeList> pList;
+    HRESULT hr = pRoot->selectNodes(queryString, &pList);
     if (FAILED(hr) || NULL == pList) return hr;
 
+    long length = 0;
     hr = pList->get_length(&length);
     if (FAILED(hr) || 0 == length) return hr;
     
     for (long index = 0; index < length; index++)
     {
+        CComPtr<IXMLDOMNode> pNode;
         hr = pList->get_item(index, &pNode);
         if (SUCCEEDED(hr) && NULL != pNode)
         {
-            hr = pNode->get_attributes(&pMap);
-            if (SUCCEEDED(hr) && NULL != pMap)
+            CComPtr<CAssemblyNode> pAssembly = new CAssemblyNode();
+            if (SUCCEEDED(CreateNode(pNode, pAssembly)))
             {
-                pNode = NULL;
-                hr = pMap->getNamedItem(L"name", &pNode);
-                if (SUCCEEDED(hr) && SUCCEEDED(pNode->get_nodeValue(&vbValue)))
-                {
-                    nodeMap.Add(vbValue.bstrVal, NULL);
-                }
-                pMap = NULL;
+                nodeMap.Add(pAssembly->szName, pAssembly);
             }
-            pNode = NULL;
         }
     }
     return hr;
@@ -105,17 +91,13 @@ void CMainDlg::RecurveInsert(HTREEITEM hParent, CAssemblyNode *pParent)
 
     for (int i = 0; i < pParent->Package.GetSize(); i++)
     {
-        CAssemblyNode *pNode = pParent->Package.GetValueAt(i);
-        if (NULL != pNode)
-        {
-            tvi.item.pszText = pNode->name.GetBuffer();
-            tvi.item.lParam = (LPARAM)pNode;
-            HTREEITEM hItem = TreeView_InsertItem(m_tree, &tvi);
-            pNode->Parent.SetAt(pParent, hItem);
-            // 添加到搜索容器
-            mMap.Add(pNode->name, pNode);
-            if (pNode->Package.GetSize() > 0) RecurveInsert(hItem, pNode);
-        }
+        CAssemblyNode *pChild = pParent->Package.GetValueAt(i);
+        tvi.item.pszText = pChild->szName.GetBuffer();
+        tvi.item.lParam = reinterpret_cast<LPARAM>(pChild);
+        HTREEITEM hItem = TreeView_InsertItem(m_tree, &tvi);
+        pChild->Parent.SetAt(pParent, hItem);
+        // 添加到搜索容器
+        if (pChild->Package.GetSize() > 0) RecurveInsert(hItem, pChild);
     }
 }
 
@@ -125,91 +107,89 @@ void CMainDlg::RecurveInsert(HTREEITEM hParent, CAssemblyNode *pParent)
 DWORD CALLBACK CMainDlg::ThreadScan(LPVOID lpParam)
 {
     CMainDlg *pDlg = (CMainDlg *)lpParam;
-    TCHAR szSearch[MAX_PATH], szXml[MAX_PATH];
+    TCHAR szPackage[MAX_PATH], szSearch[MAX_PATH], szXml[MAX_PATH];
     HANDLE hFind = INVALID_HANDLE_VALUE;
     CComPtr<IXMLDOMDocument> pXml = NULL;
     TV_INSERTSTRUCT tvi = { 0 };
     WIN32_FIND_DATA wfd = { 0 };
-    CAssemblyMap dict;
     
     HRESULT hr = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
     HR_CHECK(hr);
-
     // 初始化 XML 对象
     hr = pXml.CoCreateInstance(_uuidof(DOMDocument), NULL, CLSCTX_INPROC_SERVER);
     HR_CHECK(hr);
 
     // 开始遍历文件
-    ::PathCombine(szSearch, pDlg->mRoot->name, TEXT("*Package*~*~~*.mum"));
+    ::PathCombine(szPackage, pDlg->nodeRoot.szName, TEXT("Servicing\\Packages"));
+    ::PathCombine(szSearch, szPackage, TEXT("*Package*~*~~*.mum"));
     hFind = ::FindFirstFile(szSearch, &wfd);
-    HR_CHECK(INVALID_HANDLE_VALUE  != hFind);
-             
+    HR_CHECK(INVALID_HANDLE_VALUE  != hFind);        
     do
     {
         VARIANT_BOOL vbLoaded = VARIANT_FALSE;
-        ::PathCombine(szXml, pDlg->mRoot->name, wfd.cFileName);
+        ::PathCombine(szXml, szPackage, wfd.cFileName);
         // 加载 mum 文件
         hr = pXml->load(CComVariant(szXml), &vbLoaded);
         if (SUCCEEDED(hr) && vbLoaded == VARIANT_TRUE)
         {
-            CComPtr<IXMLDOMElement> pRoot = NULL;
+            CComPtr<IXMLDOMElement> pRoot;
             hr = pXml->get_documentElement(&pRoot);
             if (SUCCEEDED(hr) && pRoot != NULL)
             {
-                CComPtr<CAssemblyNode> pAssembly = new CComObject<CAssemblyNode>();
-                if (SUCCEEDED(FindSingle(pRoot, L"//assembly/assemblyIdentity", pAssembly)))
+                CComPtr<CAssemblyNode> pAssembly = new CAssemblyNode();
+                CComPtr<IXMLDOMNode> pNode;
+                hr = pRoot->selectSingleNode(L"//assembly/assemblyIdentity", &pNode);
+                if (SUCCEEDED(hr) && SUCCEEDED(CreateNode(pNode, pAssembly)))
                 {
-                    FindList(pRoot, L"//assembly/package/parent/assemblyIdentity", pAssembly->Depend);
-                    FindList(pRoot, L"//assembly/package/update/package/assemblyIdentity", pAssembly->Package);
-                    FindList(pRoot, L"//assembly/package/update/component/assemblyIdentity", pAssembly->Component);
-                    FindList(pRoot, L"//assembly/package/update/driver/assemblyIdentity", pAssembly->Driver);
-                    dict.Add(pAssembly->name, pAssembly);
+                    CreateList(pRoot, L"//assembly/package/parent/assemblyIdentity", pAssembly->Depend);
+                    CreateList(pRoot, L"//assembly/package/update/package/assemblyIdentity", pAssembly->Package);
+                    CreateList(pRoot, L"//assembly/package/update/component/assemblyIdentity", pAssembly->Component);
+                    CreateList(pRoot, L"//assembly/package/update/driver/assemblyIdentity", pAssembly->Driver);
+                    pDlg->mapPackage.Add(pAssembly->szName, pAssembly);
                 }
             }
         }
     } while (::FindNextFile(hFind, &wfd));
+    HR_CHECK(::FindClose(hFind));
 
     // 设置封包父子关系
-    for (int i = 0; i < dict.GetSize(); i++)
+    for (int i = 0; i < pDlg->mapPackage.GetSize(); i++)
     {
-        CAssemblyNode * pParent = dict.GetValueAt(i);
+        CAssemblyNode *pChild, *pParent = pDlg->mapPackage.GetValueAt(i);
         for (int j = 0; j < pParent->Package.GetSize(); j++)
         {
-            CAssemblyNode * pChild = dict.Lookup(pParent->Package.GetKeyAt(j));
-            if (NULL != pChild)
+            while (NULL == (pChild = pDlg->mapPackage.Lookup(pParent->Package.GetKeyAt(j))))
+            {
+                pParent->Package.RemoveAt(j);
+                if (j >= pParent->Package.GetSize()) break;
+            }
+            if (NULL != pChild) 
             {
                 pChild->Parent.Add(pParent, NULL);
-                pParent->Package.SetAtIndex(j, pChild->name, pChild);
+                pParent->Package.SetAtIndex(j, pChild->szName, pChild);
             }
         }
     }
 
     // 将顶级封包添加到Root
-    for (int i = 0; i < dict.GetSize(); i++)
+    for (int i = 0; i < pDlg->mapPackage.GetSize(); i++)
     {
-        CAssemblyNode * pNode = dict.GetValueAt(i);
-        if (pNode->Parent.GetSize() == 0)
-        {
-            pDlg->mRoot->Package.Add(pNode->name, pNode);
-            pNode->Parent.Add(pDlg->mRoot, NULL);
-        }
+        CAssemblyNode *pNode = pDlg->mapPackage.GetValueAt(i);
+        if (pNode->Parent.GetSize() == 0) pDlg->nodeRoot.Package.Add(pNode->szName, pNode);
     }
 
     // 插入根节点
     tvi.hInsertAfter = TVI_ROOT;
     tvi.item.mask = TVIF_TEXT | TVIF_PARAM;
-    tvi.item.pszText = pDlg->mRoot->name.GetBuffer();
-    tvi.item.lParam = (LPARAM)(CAssemblyNode *)pDlg->mRoot;
+    tvi.item.pszText = szPackage;
+    tvi.item.lParam = reinterpret_cast<LPARAM>(&pDlg->nodeRoot);
 
     HTREEITEM hRoot = TreeView_InsertItem(pDlg->m_tree, &tvi);
-    pDlg->RecurveInsert(hRoot, pDlg->mRoot);
+    pDlg->RecurveInsert(hRoot, &pDlg->nodeRoot);
 
     TreeView_SetItemState(pDlg->m_tree, hRoot, 0, TVIS_STATEIMAGEMASK);
     TreeView_Expand(pDlg->m_tree, hRoot, TVE_EXPAND);
-
 exit:
-    if (INVALID_HANDLE_VALUE != hFind) ::FindClose(hFind);
-
     ::CoUninitialize();
     pDlg->m_hThread = NULL;
     return hr;

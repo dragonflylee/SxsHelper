@@ -96,6 +96,7 @@
     <ClInclude Include="MainDlg.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="StdAfx.h" />
+    <ClInclude Include="Version.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="SxsHelper.rc" />

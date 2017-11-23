@@ -29,9 +29,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Resource.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="StdAfx.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -43,6 +40,12 @@
     </ClInclude>
     <ClInclude Include="FindDlg.h">
       <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Version.h">
+      <Filter>资源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>资源文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
