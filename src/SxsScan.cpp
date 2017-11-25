@@ -53,7 +53,7 @@ HRESULT CreateNode(IXMLDOMNode *pNode, CAssemblyNode *pAssembly)
 /**
 * 查找多个元素
 */
-HRESULT CreateList(IXMLDOMElement* pRoot, BSTR queryString, CAssemblyMap& nodeMap)
+HRESULT CreateList(IXMLDOMElement* pRoot, BSTR queryString, CAssemblyList& nodeList)
 {
     CComPtr<IXMLDOMNodeList> pList;
     HRESULT hr = pRoot->selectNodes(queryString, &pList);
@@ -72,7 +72,7 @@ HRESULT CreateList(IXMLDOMElement* pRoot, BSTR queryString, CAssemblyMap& nodeMa
             CComPtr<CAssemblyNode> pAssembly = new CAssemblyNode();
             if (SUCCEEDED(CreateNode(pNode, pAssembly)))
             {
-                nodeMap.Add(pAssembly->szName, pAssembly);
+                nodeList.Add(pAssembly);
             }
         }
     }
@@ -89,15 +89,15 @@ void CMainDlg::RecurveInsert(HTREEITEM hParent, CAssemblyNode *pParent)
     tvi.hInsertAfter = TVI_SORT;
     tvi.item.mask = TVIF_TEXT | TVIF_PARAM;
 
-    for (int i = 0; i < pParent->Package.GetSize(); i++)
+    for (size_t i = 0; i < pParent->Package.GetCount(); i++)
     {
-        CAssemblyNode *pChild = pParent->Package.GetValueAt(i);
+        CAssemblyNode *pChild = pParent->Package.GetAt(i);
         tvi.item.pszText = pChild->szName.GetBuffer();
         tvi.item.lParam = reinterpret_cast<LPARAM>(pChild);
         HTREEITEM hItem = TreeView_InsertItem(m_tree, &tvi);
         pChild->Parent.SetAt(pParent, hItem);
         // 添加到搜索容器
-        if (pChild->Package.GetSize() > 0) RecurveInsert(hItem, pChild);
+        if (pChild->Package.GetCount() > 0) RecurveInsert(hItem, pChild);
     }
 }
 
@@ -156,17 +156,30 @@ DWORD CALLBACK CMainDlg::ThreadScan(LPVOID lpParam)
     for (int i = 0; i < pDlg->mapPackage.GetSize(); i++)
     {
         CAssemblyNode *pChild, *pParent = pDlg->mapPackage.GetValueAt(i);
-        for (int j = 0; j < pParent->Package.GetSize(); j++)
+        for (size_t j = 0; j < pParent->Package.GetCount(); j++)
         {
-            while (NULL == (pChild = pDlg->mapPackage.Lookup(pParent->Package.GetKeyAt(j))))
+            while (NULL == (pChild = pDlg->mapPackage.Lookup(pParent->Package.GetAt(j)->szName)))
             {
                 pParent->Package.RemoveAt(j);
-                if (j >= pParent->Package.GetSize()) break;
+                if (j >= pParent->Package.GetCount()) break;
             }
             if (NULL != pChild) 
             {
                 pChild->Parent.Add(pParent, NULL);
-                pParent->Package.SetAtIndex(j, pChild->szName, pChild);
+                pParent->Package.SetAt(j, pChild);
+            }
+        }
+
+        for (size_t j = 0; j < pParent->Depend.GetCount(); j++)
+        {
+            while (NULL == (pChild = pDlg->mapPackage.Lookup(pParent->Depend.GetAt(j)->szName)))
+            {
+                pParent->Depend.RemoveAt(j);
+                if (j >= pParent->Depend.GetCount()) break;
+            }
+            if (NULL != pChild)
+            {
+                pParent->Depend.SetAt(j, pChild);
             }
         }
     }
@@ -175,7 +188,7 @@ DWORD CALLBACK CMainDlg::ThreadScan(LPVOID lpParam)
     for (int i = 0; i < pDlg->mapPackage.GetSize(); i++)
     {
         CAssemblyNode *pNode = pDlg->mapPackage.GetValueAt(i);
-        if (pNode->Parent.GetSize() == 0) pDlg->nodeRoot.Package.Add(pNode->szName, pNode);
+        if (pNode->Parent.GetSize() == 0) pDlg->nodeRoot.Package.Add(pNode);
     }
 
     // 插入根节点

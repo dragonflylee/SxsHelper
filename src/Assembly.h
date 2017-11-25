@@ -2,7 +2,15 @@
 #define _ASSEMBLY_TREE_H_
 
 class CAssemblyNode;
-typedef ATL::CSimpleMap<CAtlString, CComPtr<CAssemblyNode> > CAssemblyMap;
+template<> class CElementTraits<CComPtr<CAssemblyNode>> : public CElementTraitsBase<CComPtr<CAssemblyNode>>
+{
+public:
+    typedef CAssemblyNode * INARGTYPE;
+    typedef CAssemblyNode * OUTARGTYPE;
+};
+
+typedef ATL::CSimpleMap<CAtlString, CComPtr<CAssemblyNode>> CAssemblyMap;
+typedef CAtlArray<CComPtr<CAssemblyNode>> CAssemblyList;
 typedef ATL::CSimpleMap<CAssemblyNode *, HTREEITEM> CAssemblySet;
 
 class CAssemblyNode : public IUnknown
@@ -17,10 +25,10 @@ public:
     // Ñ¡ÖÐ×´Ì¬
     BOOL bCheck;
     CAssemblySet Parent;
-    CAssemblyMap Depend;
-    CAssemblyMap Package;
-    CAssemblyMap Component;
-    CAssemblyMap Driver;
+    CAssemblyList Depend;
+    CAssemblyList Package;
+    CAssemblyList Component;
+    CAssemblyList Driver;
 
 public:
     STDMETHOD(QueryInterface)(REFIID /*riid*/, void ** /*ppv*/) { return E_NOTIMPL; }

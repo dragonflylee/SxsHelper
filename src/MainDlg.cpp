@@ -182,9 +182,9 @@ LRESULT CMainDlg::OnChanged(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/)
     if (bChecked == pNode->bCheck) return S_OK;
     // 树节点级联选中
     pNode->bCheck = bChecked;
-    for (int i = 0; i < pNode->Package.GetSize(); i++)
+    for (size_t i = 0; i < pNode->Package.GetCount(); i++)
     {
-        CAssemblyNode *pChild = pNode->Package.GetValueAt(i);
+        CAssemblyNode *pChild = pNode->Package.GetAt(i);
         for (int j = 0; j < pChild->Parent.GetSize(); j++)
         {
             TreeView_SetCheckState(pnmh->hwndFrom, pChild->Parent.GetValueAt(j), bChecked);
@@ -210,9 +210,9 @@ LRESULT CMainDlg::OnClick(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/)
     ::PathCombine(szWinSxS, nodeRoot.szName, TEXT("WinSxS\\Manifests"));
     CAssemblyNode *pAssembly = reinterpret_cast<CAssemblyNode *>(tvi.lParam);
 
-    for (int i = 0; i < pAssembly->Component.GetSize(); i++)
+    for (size_t i = 0; i < pAssembly->Component.GetCount(); i++)
     {
-        CAssemblyNode *pNode = pAssembly->Component.GetValueAt(i);
+        CAssemblyNode *pNode = pAssembly->Component.GetAt(i);
         CAtlString szPackage = pNode->szName.GetLength() < 40 ? pNode->szName : pNode->szName.Left(19) + TEXT("..") + pNode->szName.Right(19);
         _stprintf_s(szSearch, _countof(szSearch), TEXT("%s\\%s_%s_%s_%s_*.manifest"), szWinSxS,
             (PCTSTR)pNode->szArch, (PCTSTR)szPackage.MakeLower(), (PCTSTR)pNode->szToken, (PCTSTR)pNode->szVersion);
@@ -228,7 +228,6 @@ LRESULT CMainDlg::OnClick(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/)
             ::FindClose(hFind);
         }
     }
-
     return S_OK;
 }
 
@@ -238,29 +237,6 @@ LRESULT CMainDlg::OnContext(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/
     // 弹出右键菜单
     ::GetCursorPos(&pt);
     return ::TrackPopupMenu(::GetSubMenu(m_hMenu, 0), TPM_LEFTALIGN | TPM_LEFTBUTTON, pt.x, pt.y, 0, m_hWnd, NULL);
-}
-
-/**
-* 递归导出包名列表
-*/
-void RecurveExport(CAssemblyNode *pParent, HANDLE hFile)
-{
-    CHAR szName[MAX_PATH + 2];
-    for (int i = 0; i < pParent->Package.GetSize(); i++)
-    {
-        CAssemblyNode *pNode = pParent->Package.GetValueAt(i);
-        if (NULL == pNode) continue;
-
-        if (pNode->bCheck)
-        {
-            DWORD cbLen = (DWORD)sprintf_s(szName, _countof(szName), "%ws\r\n", (LPCTSTR)pNode->szName);
-            ::WriteFile(hFile, szName, cbLen, &cbLen, NULL);
-        }
-        else if (pNode->Package.GetSize() > 0)
-        {
-            RecurveExport(pNode, hFile);
-        }
-    }
 }
 
 LRESULT CMainDlg::OnExport(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
@@ -286,7 +262,23 @@ LRESULT CMainDlg::OnExport(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/,
         return MessageBox(szFilter, CMainDlg::GetWndCaption(), MB_ICONERROR);
     }
 
-    RecurveExport(&nodeRoot, hFile);
+    CHAR szName[MAX_PATH + 2];
+    for (int i = 0; i < mapPackage.GetSize(); i++)
+    {
+        CAssemblyNode *pNode = mapPackage.GetValueAt(i);
+        if (pNode->bCheck)
+        {
+            BOOL bCheck = TRUE;
+            for (int j = 0; j < pNode->Parent.GetSize(); j++) if (pNode->Parent.GetKeyAt(j)->bCheck) bCheck = FALSE;
+            for (size_t j = 0; j < pNode->Depend.GetCount(); j++) if (pNode->Depend.GetAt(j)->bCheck) bCheck = FALSE;
+            if (bCheck)
+            {
+                DWORD cbLen = (DWORD)sprintf_s(szName, _countof(szName), "%ws\r\n", (LPCTSTR)pNode->szName);
+                ::WriteFile(hFile, szName, cbLen, &cbLen, NULL);
+            }
+        }
+    }
+   
     return ::CloseHandle(hFile);
 }
 
