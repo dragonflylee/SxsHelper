@@ -18,6 +18,7 @@
 #define IDM_FRESH                  4004
 #define IDM_FINDNEXT               4005
 #define IDM_FINDPREV               4006
+#define IDM_DUMP                   4007
 #ifndef IDC_STATIC
 #define IDC_STATIC                  -1
 #endif

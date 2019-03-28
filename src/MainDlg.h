@@ -15,6 +15,7 @@ public:
         MESSAGE_HANDLER(WM_SIZE, OnSize)
         MESSAGE_HANDLER(CFindDlg::WM_FINDMESSAGE, OnFind)
         COMMAND_ID_HANDLER(IDM_EXPORT, OnExport)
+        COMMAND_ID_HANDLER(IDM_DUMP, OnExport)
         COMMAND_ID_HANDLER(IDM_SEARCH, OnSearch)
         COMMAND_ID_HANDLER(IDM_FRESH, OnFresh)
         COMMAND_ID_HANDLER(IDM_FINDNEXT, OnFindNext)
@@ -48,6 +49,7 @@ public:
     */
     LRESULT OnSearch(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
     LRESULT OnExport(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+    LRESULT OnDump(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
     LRESULT OnFresh(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
     LRESULT OnFindNext(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
     LRESULT OnFindPrev(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);

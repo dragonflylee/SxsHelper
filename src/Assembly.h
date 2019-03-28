@@ -28,7 +28,6 @@ public:
     CAssemblyList Depend;
     CAssemblyList Package;
     CAssemblyList Component;
-    CAssemblyList Driver;
 
 public:
     STDMETHOD(QueryInterface)(REFIID /*riid*/, void ** /*ppv*/) { return E_NOTIMPL; }

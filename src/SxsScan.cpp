@@ -144,7 +144,6 @@ DWORD CALLBACK CMainDlg::ThreadScan(LPVOID lpParam)
                     CreateList(pRoot, L"//assembly/package/parent/assemblyIdentity", pAssembly->Depend);
                     CreateList(pRoot, L"//assembly/package/update/package/assemblyIdentity", pAssembly->Package);
                     CreateList(pRoot, L"//assembly/package/update/component/assemblyIdentity", pAssembly->Component);
-                    CreateList(pRoot, L"//assembly/package/update/driver/assemblyIdentity", pAssembly->Driver);
                     pDlg->mapPackage.Add(pAssembly->szName, pAssembly);
                 }
             }
@@ -169,8 +168,7 @@ DWORD CALLBACK CMainDlg::ThreadScan(LPVOID lpParam)
                 pParent->Package.SetAt(j, pChild);
             }
         }
-
-        for (size_t j = 0; j < pParent->Depend.GetCount(); j++)
+        /*for (size_t j = 0; j < pParent->Depend.GetCount(); j++)
         {
             while (NULL == (pChild = pDlg->mapPackage.Lookup(pParent->Depend.GetAt(j)->szName)))
             {
@@ -181,7 +179,7 @@ DWORD CALLBACK CMainDlg::ThreadScan(LPVOID lpParam)
             {
                 pParent->Depend.SetAt(j, pChild);
             }
-        }
+        }*/
     }
 
     // 将顶级封包添加到Root

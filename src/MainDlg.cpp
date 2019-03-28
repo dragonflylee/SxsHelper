@@ -60,8 +60,7 @@ LRESULT CMainDlg::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, 
 
     // 从获取默认保存路径
     BOOL_CHECK(::SHGetSpecialFolderPath(m_hWnd, m_szExport, CSIDL_MYDOCUMENTS, TRUE));
-    BOOL_CHECK(::PathCombine(m_szExport, m_szExport, TEXT("Remove.txt")));
-
+   
     // 创建扫描线程
     m_hThread = ::CreateThread(NULL, 0, CMainDlg::ThreadScan, this, 0, NULL);
     BOOL_CHECK(m_hThread);
@@ -239,23 +238,25 @@ LRESULT CMainDlg::OnContext(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/
     return ::TrackPopupMenu(::GetSubMenu(m_hMenu, 0), TPM_LEFTALIGN | TPM_LEFTBUTTON, pt.x, pt.y, 0, m_hWnd, NULL);
 }
 
-LRESULT CMainDlg::OnExport(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
+LRESULT CMainDlg::OnExport(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
     CAtlString szFilter;
+    TCHAR szExport[MAX_PATH] = { 0 };
     szFilter.LoadString(IDS_FILTERSAVE);
     szFilter.Replace(TEXT('|'), TEXT('\0'));
-
+    ::PathCombine(szExport, m_szExport, (wID == IDM_EXPORT) ? TEXT("Remove.txt") : TEXT("Dump.txt"));
+   
     OPENFILENAME ofn = { sizeof(OPENFILENAME) };
     ofn.hwndOwner = m_hWnd;
     ofn.lpstrFilter = szFilter;
     ofn.lpstrDefExt = TEXT("txt");
     ofn.Flags = OFN_OVERWRITEPROMPT | OFN_EXPLORER;
     ofn.nMaxFile = MAX_PATH;
-    ofn.lpstrFile = m_szExport;
+    ofn.lpstrFile = szExport;
 
     if (!::GetSaveFileName(&ofn)) return FALSE;
 
-    HANDLE hFile = ::CreateFile(m_szExport, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE hFile = ::CreateFile(szExport, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (INVALID_HANDLE_VALUE == hFile)
     {
         szFilter.Format(IDS_ERROR, ::GetLastError());
@@ -270,8 +271,8 @@ LRESULT CMainDlg::OnExport(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/,
         {
             BOOL bCheck = TRUE;
             for (int j = 0; j < pNode->Parent.GetSize(); j++) if (pNode->Parent.GetKeyAt(j)->bCheck) bCheck = FALSE;
-            for (size_t j = 0; j < pNode->Depend.GetCount(); j++) if (pNode->Depend.GetAt(j)->bCheck) bCheck = FALSE;
-            if (bCheck)
+           // for (size_t j = 0; j < pNode->Depend.GetCount(); j++) if (pNode->Depend.GetAt(j)->bCheck) bCheck = FALSE;
+            if (bCheck || wID == IDM_DUMP)
             {
                 DWORD cbLen = (DWORD)sprintf_s(szName, _countof(szName), "%ws\r\n", (LPCTSTR)pNode->szName);
                 ::WriteFile(hFile, szName, cbLen, &cbLen, NULL);
