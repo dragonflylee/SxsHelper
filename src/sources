@@ -25,7 +25,7 @@ C_DEFINES=$(C_DEFINES) -DUNICODE -D_UNICODE
 SOURCES=StdAfx.cpp \
         SxsHelper.cpp \
         SxsScan.cpp \
-        MainDlg.cpp \
+        MainFrm.cpp \
         SxsHelper.rc
         
 INCLUDES= $(SDK_INC_PATH);

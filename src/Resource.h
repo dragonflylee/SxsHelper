@@ -6,7 +6,6 @@
 #define IDD_ABOUT                  201
 #define IDS_ABOUT                  401
 #define IDS_SOURCE                 402
-#define IDS_RUNNING                403
 #define IDS_ERROR                  404
 #define IDS_BUSY                   405
 #define IDS_FILTERSAVE             406
@@ -21,6 +20,14 @@
 #define IDM_DUMP                   4007
 #ifndef IDC_STATIC
 #define IDC_STATIC                  -1
+#endif
+
+// 版本号控制文件
+#define VER_MAIN 0
+#define VER_SUB 2
+#define VER_SUB2 1
+#ifndef VER_BUILD
+#define VER_BUILD 0
 #endif
 
 // Next default values for new objects

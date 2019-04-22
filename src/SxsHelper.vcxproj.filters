@@ -18,34 +18,25 @@
     <ClCompile Include="SxsHelper.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="StdAfx.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="MainDlg.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="SxsScan.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="MainFrm.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="StdAfx.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="MainDlg.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Assembly.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="FindDlg.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Version.h">
-      <Filter>资源文件</Filter>
+    <ClInclude Include="MainFrm.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="SxsHelper.h">
+      <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Resource.h">
-      <Filter>资源文件</Filter>
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

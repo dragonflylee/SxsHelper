@@ -1,19 +1,34 @@
 #ifndef _MAIN_DLG_H_
 #define _MAIN_DLG_H_
 
-class CAssemblyNode;
+struct CAssemblyNode;
+typedef ATL::CSimpleMap<CAtlString, CAssemblyNode *> CAssemblyMap;
+typedef ATL::CSimpleMap<CAssemblyNode *, HTREEITEM> CAssemblySet;
 
-class CMainDlg : public CWindowImpl<CMainDlg, CWindow, CFrameWinTraits>
+struct CAssemblyNode
+{
+    // 封包属性
+    CAtlString szName;
+    CAtlString szArch;
+    CAtlString szLanguage;
+    CAtlString szVersion;
+    CAtlString szToken;
+    // 选中状态
+    BOOL bCheck;
+    CAssemblySet Parent;
+    CAssemblyMap Package;
+};
+
+class CMainFrm : public CWindowImpl<CMainFrm, CWindow, CFrameWinTraits>
 {
 public:
-    DECLARE_WND_CLASS(TEXT("CSxsWnd"))
+    DECLARE_WND_CLASS_EX(TEXT("CSxsWnd"), 0, COLOR_WINDOWFRAME)
 
-    BEGIN_MSG_MAP(CMainDlg)
+    BEGIN_MSG_MAP(CMainFrm)
         MESSAGE_HANDLER(WM_CREATE, OnCreate)
-        MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
         MESSAGE_HANDLER(WM_SYSCOMMAND, OnSysCommand)
         MESSAGE_HANDLER(WM_SIZE, OnSize)
-        MESSAGE_HANDLER(CFindDlg::WM_FINDMESSAGE, OnFind)
+        MESSAGE_HANDLER(CFindDlg::WfindDlgMESSAGE, OnFind)
         COMMAND_ID_HANDLER(IDM_EXPORT, OnExport)
         COMMAND_ID_HANDLER(IDM_DUMP, OnExport)
         COMMAND_ID_HANDLER(IDM_SEARCH, OnSearch)
@@ -34,10 +49,10 @@ public:
     * 对话框相关
     */
     LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
-    LRESULT OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
     LRESULT OnSize(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
     LRESULT OnSysCommand(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
     LRESULT OnFind(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+    void OnFinalMessage(HWND /*hWnd*/);
     /**
     * TreeView
     */
@@ -59,39 +74,34 @@ public:
     LRESULT OnFilterChar(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 
     // 查找对话框处理
-    inline BOOL FindMsg(LPMSG lpMsg) { return m_find.IsWindow() && m_find.IsDialogMessage(lpMsg); }
+    inline BOOL FindMsg(LPMSG lpMsg) { return findDlg.IsWindow() && findDlg.IsDialogMessage(lpMsg); }
 
 protected:
     /**
-    * 扫描封包线程
+    * 扫描封包相关
     */
     static DWORD CALLBACK ThreadScan(LPVOID lpParam);
-
-    /**
-    * 递归插入节点
-    */
-    void RecurveInsert(HTREEITEM hParent, CAssemblyNode *pParent);
-
-    /**
-    * 检查工作线程
-    */
+    void DoInsert(HTREEITEM hParent, CAssemblyNode *pParent);
     BOOL IsWorking();
 
 private:
     HANDLE m_hThread;
     HMENU m_hMenu;
     HFONT m_hFont;
-    TCHAR m_szExport[MAX_PATH];
+    TCHAR szExport[MAX_PATH];
 
-    CFindDlg m_find;
-    CContainedWindowT<CWindow, CWinTraitsOR<TVS_HASLINES | TVS_HASBUTTONS | TVS_LINESATROOT | TVS_CHECKBOXES> > m_tree;
-    CContainedWindowT<CWindow, CWinTraitsOR<ES_AUTOHSCROLL, WS_EX_CLIENTEDGE> > m_filter;
+    typedef CWinTraitsOR<TVS_HASLINES | TVS_HASBUTTONS | TVS_LINESATROOT | TVS_CHECKBOXES> CTreeViewTraits;
+    typedef CWinTraitsOR<ES_AUTOHSCROLL, WS_EX_CLIENTEDGE> CEditTraits;
+
+    CFindDlg findDlg;
+    CContainedWindowT<CWindow, CTreeViewTraits> treeView;
+    CContainedWindowT<CWindow, CEditTraits> filterEdit;
     // 根节点
     CAssemblyNode nodeRoot;
     CAssemblyMap mapPackage;
 
 public:
-    CMainDlg(LPCTSTR szPath);
+    CMainFrm(LPCTSTR szPath);
 };
 
 #endif // _MAIN_DLG_H_

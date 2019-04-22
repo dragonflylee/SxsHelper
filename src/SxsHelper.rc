@@ -2,13 +2,17 @@
 //
 #include "Resource.h"
 
+#define _VERTOSTRING(arg) #arg
+#define VERTOSTRING(arg) _VERTOSTRING(arg) 
+#define VER_FULL    VERTOSTRING(VER_MAIN.VER_SUB.VER_SUB2)
+#define VER_FULL_RC VER_MAIN,VER_SUB,VER_SUB2,VER_BUILD
+
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include "Version.h"
-#include "winres.h"
+#include <Windows.h>
 
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
@@ -99,7 +103,6 @@ BEGIN
     IDR_MAIN                "Sxs封包分析助手"
     IDS_ABOUT               "关于(&A)..."
     IDS_SOURCE              "请选择操作系统 Windows 目录"
-    IDS_RUNNING             "貌似另一个我正在运行"
     IDS_ERROR               "发生了一个致命错误 (%d)"
     IDS_BUSY                "扫描正在进行中，请稍后..."
     IDS_FILTERSAVE          "文本文件 (*.txt)|*.txt|所有文件 (*.*)|*.*|"
@@ -196,7 +199,6 @@ BEGIN
     IDR_MAIN                "Sxs Package Helper"
     IDS_ABOUT               "&About..."
     IDS_SOURCE              "Please select the Windows installation directory"
-    IDS_RUNNING             "It seems that another me is running"
     IDS_ERROR               "Oops, critical error happened (%d)"
     IDS_BUSY                "Program is working, please wait a moment"
     IDS_FILTERSAVE          "Text file (*.txt)|*.txt|All files (*.*)|*.*|"
@@ -241,8 +243,7 @@ END
 
 2 TEXTINCLUDE 
 BEGIN
-    "#include ""Version.h""\r\n"
-    "#include ""winres.h""\r\n"
+    "#include <Windows.h>\r\n"
     "\0"
 END
 

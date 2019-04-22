@@ -1,4 +1,6 @@
-#include "StdAfx.h"
+#include "SxsHelper.h"
+
+CComModule _Module;
 
 int CALLBACK CheckPath(HWND hWnd, UINT uMsg, LPARAM lParam, LPARAM lpData)
 {
@@ -54,12 +56,12 @@ int Run(HINSTANCE hInst, int nCmdShow)
 #endif
     szText.ReleaseBuffer();
 
-    CMainDlg wndMain(szText);
+    CMainFrm wndMain(szText);
     HWND hWnd = wndMain.Create(HWND_DESKTOP);
     if (NULL == hWnd)
     {
         szText.Format(IDS_ERROR, ::GetLastError());
-        return wndMain.MessageBox(szText, CMainDlg::GetWndCaption(), MB_ICONERROR);
+        return wndMain.MessageBox(szText, CMainFrm::GetWndCaption(), MB_ICONERROR);
     }
     wndMain.ShowWindow(nCmdShow);
 
@@ -87,14 +89,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    HANDLE hMutex = ::CreateMutex(NULL, TRUE, TEXT("CSample"));
-    if (::GetLastError() == ERROR_ALREADY_EXISTS)
-    {
-        CAtlString szText;
-        szText.LoadString(IDS_RUNNING);
-        return ::MessageBox(HWND_DESKTOP, szText, CMainDlg::GetWndCaption(), MB_ICONWARNING);
-    }
-
     HRESULT hr = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
     ATLASSERT(SUCCEEDED(hr));
 
@@ -105,6 +99,5 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
     _Module.Term();
     ::CoUninitialize();
-    ::CloseHandle(hMutex);
     return nRet;
 }
