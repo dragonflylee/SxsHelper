@@ -28,7 +28,8 @@ public:
         MESSAGE_HANDLER(WM_CREATE, OnCreate)
         MESSAGE_HANDLER(WM_SYSCOMMAND, OnSysCommand)
         MESSAGE_HANDLER(WM_SIZE, OnSize)
-        MESSAGE_HANDLER(CFindDlg::WfindDlgMESSAGE, OnFind)
+        MESSAGE_HANDLER(CFindDlg::WM_FIND, OnFind)
+        MESSAGE_HANDLER(WM_CONTEXTMENU, OnContext)
         COMMAND_ID_HANDLER(IDM_EXPORT, OnExport)
         COMMAND_ID_HANDLER(IDM_DUMP, OnExport)
         COMMAND_ID_HANDLER(IDM_SEARCH, OnSearch)
@@ -36,9 +37,9 @@ public:
         COMMAND_ID_HANDLER(IDM_FINDNEXT, OnFindNext)
         COMMAND_ID_HANDLER(IDM_FINDPREV, OnFindPrev)
         NOTIFY_CODE_HANDLER(TVN_ITEMCHANGED, OnChanged)
-        NOTIFY_CODE_HANDLER(NM_DBLCLK, OnClick)
-        NOTIFY_CODE_HANDLER(NM_RCLICK, OnContext)
     ALT_MSG_MAP(1)
+        MESSAGE_HANDLER(WM_CONTEXTMENU, OnContext)
+        MESSAGE_HANDLER(WM_LBUTTONUP, OnClick)
     ALT_MSG_MAP(2)
         MESSAGE_HANDLER(WM_CHAR, OnFilterChar)
     END_MSG_MAP()
@@ -57,8 +58,8 @@ public:
     * TreeView
     */
     LRESULT OnChanged(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
-    LRESULT OnClick(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
-    LRESULT OnContext(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
+    LRESULT OnClick(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+    LRESULT OnContext(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
     /**
     * 菜单事件
     */
@@ -74,7 +75,7 @@ public:
     LRESULT OnFilterChar(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 
     // 查找对话框处理
-    inline BOOL FindMsg(LPMSG lpMsg) { return findDlg.IsWindow() && findDlg.IsDialogMessage(lpMsg); }
+    inline BOOL FindMsg(LPMSG lpMsg) { return dlgFind.IsWindow() && dlgFind.IsDialogMessage(lpMsg); }
 
 protected:
     /**
@@ -93,9 +94,9 @@ private:
     typedef CWinTraitsOR<TVS_HASLINES | TVS_HASBUTTONS | TVS_LINESATROOT | TVS_CHECKBOXES> CTreeViewTraits;
     typedef CWinTraitsOR<ES_AUTOHSCROLL, WS_EX_CLIENTEDGE> CEditTraits;
 
-    CFindDlg findDlg;
-    CContainedWindowT<CWindow, CTreeViewTraits> treeView;
-    CContainedWindowT<CWindow, CEditTraits> filterEdit;
+    CFindDlg dlgFind;
+    CContainedWindowT<CWindow, CTreeViewTraits> wndTree;
+    CContainedWindowT<CWindow, CEditTraits> wndFilter;
     // 根节点
     CAssemblyNode nodeRoot;
     CAssemblyMap mapPackage;

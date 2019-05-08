@@ -1,6 +1,4 @@
 #include "SxsHelper.h"
-
-
 /**
 * 处理单个元素
 */
@@ -103,7 +101,7 @@ void CMainFrm::DoInsert(HTREEITEM hParent, CAssemblyNode *pParent)
         CAssemblyNode *pChild = pParent->Package.GetValueAt(i);
         tvi.item.pszText = pChild->szName.GetBuffer();
         tvi.item.lParam = reinterpret_cast<LPARAM>(pChild);
-        HTREEITEM hItem = TreeView_InsertItem(treeView, &tvi);
+        HTREEITEM hItem = TreeView_InsertItem(wndTree, &tvi);
         pChild->Parent.SetAt(pParent, hItem);
         // 添加到搜索容器
         if (pChild->Package.GetSize() > 0) DoInsert(hItem, pChild);
@@ -115,21 +113,25 @@ void CMainFrm::DoInsert(HTREEITEM hParent, CAssemblyNode *pParent)
 */
 DWORD CALLBACK CMainFrm::ThreadScan(LPVOID lpParam)
 {
-    CMainFrm *pDlg = (CMainFrm *)lpParam;
+    CMainFrm *pT = (CMainFrm *)lpParam;
     TCHAR szPackage[MAX_PATH], szSearch[MAX_PATH], szXml[MAX_PATH];
     HANDLE hFind = INVALID_HANDLE_VALUE;
-    CComPtr<IXMLDOMDocument> pXml = NULL;
+    CComPtr<IXMLDOMDocument> pXml;
     TV_INSERTSTRUCT tvi = { 0 };
     WIN32_FIND_DATA wfd = { 0 };
+    HRESULT hr = S_OK;
+    CComPtr<ITaskbarList3> pTaskbar;
     
-    HRESULT hr = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-    HR_CHECK(hr);
+    HR_CHECK(::CoInitializeEx(NULL, COINIT_DISABLE_OLE1DDE));
+    // 初始化任务栏
+    HR_CHECK(pTaskbar.CoCreateInstance(CLSID_TaskbarList, NULL, CLSCTX_INPROC_SERVER));
+    HR_CHECK(pTaskbar->HrInit());
+    HR_CHECK(pTaskbar->SetProgressState(pT->m_hWnd, TBPF_INDETERMINATE));
     // 初始化 XML 对象
-    hr = pXml.CoCreateInstance(_uuidof(DOMDocument), NULL, CLSCTX_INPROC_SERVER);
-    HR_CHECK(hr);
+    HR_CHECK(pXml.CoCreateInstance(_uuidof(DOMDocument), NULL, CLSCTX_INPROC_SERVER));
 
     // 开始遍历文件
-    ::PathCombine(szPackage, pDlg->nodeRoot.szName, TEXT("Servicing\\Packages"));
+    ::PathCombine(szPackage, pT->nodeRoot.szName, TEXT("Servicing\\Packages"));
     ::PathCombine(szSearch, szPackage, TEXT("*Package*~*~~*.mum"));
     hFind = ::FindFirstFile(szSearch, &wfd);
     HR_CHECK(INVALID_HANDLE_VALUE  != hFind);        
@@ -151,7 +153,7 @@ DWORD CALLBACK CMainFrm::ThreadScan(LPVOID lpParam)
                 if (SUCCEEDED(hr) && SUCCEEDED(CreateNode(pNode, &pAssembly)))
                 {
                     CreateList(pRoot, L"//assembly/package/update/package/assemblyIdentity", pAssembly->Package);
-                    pDlg->mapPackage.Add(pAssembly->szName, pAssembly);
+                    pT->mapPackage.Add(pAssembly->szName, pAssembly);
                 }
             }
         }
@@ -159,12 +161,12 @@ DWORD CALLBACK CMainFrm::ThreadScan(LPVOID lpParam)
     HR_CHECK(::FindClose(hFind));
 
     // 设置封包父子关系
-    for (int i = 0; i < pDlg->mapPackage.GetSize(); i++)
+    for (int i = 0; i < pT->mapPackage.GetSize(); i++)
     {
-        CAssemblyNode *pChild, *pParent = pDlg->mapPackage.GetValueAt(i);
+        CAssemblyNode *pChild, *pParent = pT->mapPackage.GetValueAt(i);
         for (int j = 0; j < pParent->Package.GetSize(); j++)
         {
-            while (NULL == (pChild = pDlg->mapPackage.Lookup(pParent->Package.GetKeyAt(j))))
+            while (NULL == (pChild = pT->mapPackage.Lookup(pParent->Package.GetKeyAt(j))))
             {
                 pParent->Package.RemoveAt(j);
                 if (j >= pParent->Package.GetSize()) break;
@@ -190,26 +192,29 @@ DWORD CALLBACK CMainFrm::ThreadScan(LPVOID lpParam)
     }
 
     // 将顶级封包添加到Root
-    for (int i = 0; i < pDlg->mapPackage.GetSize(); i++)
+    for (int i = 0; i < pT->mapPackage.GetSize(); i++)
     {
-        CAssemblyNode *pNode = pDlg->mapPackage.GetValueAt(i);
+        CAssemblyNode *pNode = pT->mapPackage.GetValueAt(i);
         if (pNode->Parent.GetSize() == 0) 
-            pDlg->nodeRoot.Package.Add(pNode->szName, pNode);
+            pT->nodeRoot.Package.Add(pNode->szName, pNode);
     }
 
     // 插入根节点
     tvi.hInsertAfter = TVI_ROOT;
     tvi.item.mask = TVIF_TEXT | TVIF_PARAM;
     tvi.item.pszText = szPackage;
-    tvi.item.lParam = reinterpret_cast<LPARAM>(&pDlg->nodeRoot);
+    tvi.item.lParam = reinterpret_cast<LPARAM>(&pT->nodeRoot);
 
-    HTREEITEM hRoot = TreeView_InsertItem(pDlg->treeView, &tvi);
-    pDlg->DoInsert(hRoot, &pDlg->nodeRoot);
+    HTREEITEM hRoot = TreeView_InsertItem(pT->wndTree, &tvi);
+    pT->DoInsert(hRoot, &pT->nodeRoot);
 
-    TreeView_SetItemState(pDlg->treeView, hRoot, 0, TVIS_STATEIMAGEMASK);
-    TreeView_Expand(pDlg->treeView, hRoot, TVE_EXPAND);
+    TreeView_SetItemState(pT->wndTree, hRoot, 0, TVIS_STATEIMAGEMASK);
+    TreeView_Expand(pT->wndTree, hRoot, TVE_EXPAND);
+
 exit:
+    pTaskbar->SetProgressState(pT->m_hWnd, TBPF_NOPROGRESS);
     ::CoUninitialize();
-    pDlg->m_hThread = NULL;
+    CloseHandle(pT->m_hThread);
+    pT->m_hThread = NULL;
     return hr;
 }

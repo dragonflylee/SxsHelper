@@ -31,7 +31,7 @@ public:
     }
     virtual ~CFindDlg() {}
 
-    static UINT WfindDlgMESSAGE;
+    static UINT WM_FIND;
 };
 
 #endif // _FIND_DLG_H_

@@ -1,14 +1,12 @@
 #include "SxsHelper.h"
 
 // 注册查找对话框事件
-UINT CFindDlg::WfindDlgMESSAGE = ::RegisterWindowMessage(FINDMSGSTRING);
+UINT CFindDlg::WM_FIND = ::RegisterWindowMessage(FINDMSGSTRING);
 
 CMainFrm::CMainFrm(LPCTSTR szPath) :
 m_hThread(NULL),
 m_hMenu(NULL),
-m_hFont(NULL),
-treeView(WC_TREEVIEW, this, 1),
-filterEdit(WC_EDIT, this, 2)
+m_hFont(NULL)
 {
     ZeroMemory(&szExport, sizeof(szExport));
     nodeRoot.szName = szPath;
@@ -47,18 +45,17 @@ LRESULT CMainFrm::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, 
     m_hMenu = ::LoadMenu(_Module.m_hInst, MAKEINTRESOURCE(IDR_MAIN));
     BOOL_CHECK(m_hMenu);
 
-    BOOL_CHECK(treeView.Create(m_hWnd, NULL));
+    BOOL_CHECK(wndTree.Create(WC_TREEVIEW, this, 1, m_hWnd, NULL));
 
     // 创建 筛选器 控件
     BOOL_CHECK(szText.LoadString(IDS_FILTERHINT));
-    BOOL_CHECK(filterEdit.Create(treeView, NULL));
-    filterEdit.SendMessage(EM_SETCUEBANNER, TRUE, (LPARAM)(LPCTSTR)szText);
-    filterEdit.SendMessage(EM_LIMITTEXT, MAX_PATH);
-    filterEdit.SetFont(m_hFont);
+    BOOL_CHECK(wndFilter.Create(WC_EDIT, this, 2, wndTree, NULL));
+    wndFilter.SendMessage(EM_SETCUEBANNER, TRUE, (LPARAM)szText.GetString());
+    wndFilter.SendMessage(EM_LIMITTEXT, MAX_PATH);
+    wndFilter.SetFont(m_hFont);
 
     // 从获取默认保存路径
     BOOL_CHECK(::SHGetSpecialFolderPath(m_hWnd, szExport, CSIDL_MYDOCUMENTS, TRUE));
-   
     // 创建扫描线程
     m_hThread = ::CreateThread(NULL, 0, CMainFrm::ThreadScan, this, 0, NULL);
     BOOL_CHECK(m_hThread);
@@ -77,8 +74,8 @@ void CMainFrm::OnFinalMessage(HWND /*hWnd*/)
 
 LRESULT CMainFrm::OnSize(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
 {
-    treeView.ResizeClient(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-    return filterEdit.SetWindowPos(HWND_TOP, GET_X_LPARAM(lParam) - 180, 0, 180, 25, 0);
+    wndTree.ResizeClient(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+    return wndFilter.SetWindowPos(HWND_TOP, GET_X_LPARAM(lParam) - 180, 0, 180, 25, 0);
 }
 
 LRESULT CMainFrm::OnSysCommand(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& bHandled)
@@ -93,8 +90,9 @@ LRESULT CMainFrm::OnSysCommand(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, 
     case SC_CLOSE:
         bHandled = IsWorking();
         break;
+    default:
+        bHandled = FALSE;
     }
-    bHandled = FALSE;
     return S_OK;
 }
 
@@ -106,7 +104,7 @@ LRESULT CMainFrm::OnFind(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& 
     LPFINDREPLACE pfr = (LPFINDREPLACE)lParam;
     if (pfr->Flags & FR_DIALOGTERM)
     {
-        findDlg.m_hWnd = NULL;
+        dlgFind.m_hWnd = NULL;
         pfr->Flags &= ~FR_DIALOGTERM;
         return TRUE;
     }
@@ -116,40 +114,40 @@ LRESULT CMainFrm::OnFind(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& 
     tvi.pszText = szText;
     tvi.cchTextMax = _countof(szText);
     // 获取当前的节点
-    tvi.hItem = TreeView_GetSelection(treeView);
-    if (NULL != pfr->lCustData) TreeView_SetItemState(treeView, (HTREEITEM)pfr->lCustData, 0, TVIS_BOLD);
+    tvi.hItem = TreeView_GetSelection(wndTree);
+    if (NULL != pfr->lCustData) TreeView_SetItemState(wndTree, (HTREEITEM)pfr->lCustData, 0, TVIS_BOLD);
 
     PTSTR(WINAPI *pStrStr)(PCTSTR, PCTSTR) = (pfr->Flags & FR_MATCHCASE) ? ::StrStr : ::StrStrI;
 
     // 向前搜索
-    if (NULL == tvi.hItem) tvi.hItem = TreeView_GetRoot(treeView);
+    if (NULL == tvi.hItem) tvi.hItem = TreeView_GetRoot(wndTree);
     do
     {
-        pfr->lCustData = (LPARAM)TreeView_GetChild(treeView, tvi.hItem);
+        pfr->lCustData = (LPARAM)TreeView_GetChild(wndTree, tvi.hItem);
         while (NULL == pfr->lCustData && NULL != tvi.hItem)
         {
-            pfr->lCustData = (LPARAM)TreeView_GetNextSibling(treeView, tvi.hItem);
-            if (NULL == pfr->lCustData) tvi.hItem = TreeView_GetParent(treeView, tvi.hItem);
+            pfr->lCustData = (LPARAM)TreeView_GetNextSibling(wndTree, tvi.hItem);
+            if (NULL == pfr->lCustData) tvi.hItem = TreeView_GetParent(wndTree, tvi.hItem);
         }
         if (NULL == pfr->lCustData) break;
         tvi.hItem = (HTREEITEM)pfr->lCustData;
-        TreeView_GetItem(treeView, &tvi);
+        TreeView_GetItem(wndTree, &tvi);
     } while (pStrStr(szText, pfr->lpstrFindWhat) == NULL);
 
     if (NULL != pfr->lCustData)
     {
-        TreeView_SetItemState(treeView, tvi.hItem, TVIS_BOLD, TVIS_BOLD);
-        return TreeView_SelectItem(treeView, tvi.hItem);
+        TreeView_SetItemState(wndTree, tvi.hItem, TVIS_BOLD, TVIS_BOLD);
+        return TreeView_SelectItem(wndTree, tvi.hItem);
     }
     // 提示没有找到
     CAtlString szEnd;
     szEnd.Format(IDS_FINDEND, pfr->lpstrFindWhat);
-    return findDlg.MessageBox(szEnd, CMainFrm::GetWndCaption(), MB_ICONWARNING);
+    return dlgFind.MessageBox(szEnd, CMainFrm::GetWndCaption(), MB_ICONWARNING);
 }
 
 LRESULT CMainFrm::OnFindNext(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& bHandled)
 {
-    LPFINDREPLACE pfr = findDlg.GetNotifier();
+    LPFINDREPLACE pfr = dlgFind.GetNotifier();
     if (pfr->lpstrFindWhat[0] == TEXT('\0')) return FALSE;
 
     pfr->Flags |= FR_DOWN;
@@ -158,7 +156,7 @@ LRESULT CMainFrm::OnFindNext(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*
 
 LRESULT CMainFrm::OnFindPrev(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& bHandled)
 {
-    LPFINDREPLACE pfr = findDlg.GetNotifier();
+    LPFINDREPLACE pfr = dlgFind.GetNotifier();
     if (pfr->lpstrFindWhat[0] == TEXT('\0')) return FALSE;
 
     pfr->Flags &= ~FR_DOWN;
@@ -189,30 +187,26 @@ LRESULT CMainFrm::OnChanged(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/)
     return S_OK;
 }
 
-LRESULT CMainFrm::OnClick(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/)
+LRESULT CMainFrm::OnClick(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
 {
-    TVHITTESTINFO ht = { 0 };
-    ::GetCursorPos(&ht.pt);
-    treeView.ScreenToClient(&ht.pt);
+    TVHITTESTINFO ht = { { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) } };
+    wndTree.ScreenToClient(&ht.pt);
 
-    if (!TreeView_HitTest(treeView, &ht) || (ht.flags & TVHT_ONITEMLABEL) == 0) return S_OK;
+    if (!TreeView_HitTest(wndTree, &ht) || (ht.flags & TVHT_ONITEMLABEL) == 0) return S_OK;
 
     TVITEM tvi = { 0 };
     tvi.hItem = ht.hItem;
     tvi.mask = TVIF_PARAM;
-    if (!TreeView_GetItem(treeView, &tvi)) return S_OK;
+    if (!TreeView_GetItem(wndTree, &tvi)) return S_OK;
 
-    TCHAR szWinSxS[MAX_PATH], szSearch[MAX_PATH] = { 0 };
+    TCHAR szWinSxS[MAX_PATH];
     ::PathCombine(szWinSxS, nodeRoot.szName, TEXT("WinSxS\\Manifests"));
     return S_OK;
 }
 
-LRESULT CMainFrm::OnContext(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/)
+LRESULT CMainFrm::OnContext(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
 {
-    POINT pt = { 0, 0 };
-    // 弹出右键菜单
-    ::GetCursorPos(&pt);
-    return ::TrackPopupMenu(::GetSubMenu(m_hMenu, 0), TPM_LEFTALIGN | TPM_LEFTBUTTON, pt.x, pt.y, 0, m_hWnd, NULL);
+    return ::TrackPopupMenu(::GetSubMenu(m_hMenu, 0), TPM_LEFTALIGN | TPM_LEFTBUTTON, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), 0, m_hWnd, NULL);
 }
 
 LRESULT CMainFrm::OnExport(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
@@ -265,8 +259,8 @@ LRESULT CMainFrm::OnSearch(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/,
     // 树为空不能查找
     if (mapPackage.GetSize() == 0) return FALSE;
     if (IsWorking()) return FALSE;
-    if (NULL != findDlg.m_hWnd && findDlg.IsWindow()) return TRUE;
-    return findDlg.Create(FR_DOWN, m_hWnd);
+    if (NULL != dlgFind.m_hWnd && dlgFind.IsWindow()) return TRUE;
+    return dlgFind.Create(FR_DOWN, m_hWnd);
 }
 
 LRESULT CMainFrm::OnFresh(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
@@ -274,10 +268,9 @@ LRESULT CMainFrm::OnFresh(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, 
     if (IsWorking()) return FALSE;
 
     // 删除节点
-    TreeView_DeleteAllItems(treeView);
+    TreeView_DeleteAllItems(wndTree);
     nodeRoot.Package.RemoveAll();
     mapPackage.RemoveAll();
-
     // 创建扫描线程
     m_hThread = ::CreateThread(NULL, 0, CMainFrm::ThreadScan, this, 0, NULL);
     return TRUE;
@@ -288,7 +281,7 @@ LRESULT CMainFrm::OnFilterChar(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, 
     if (VK_RETURN == wParam)
     {
         CAtlString szFind;
-        filterEdit.GetWindowText(szFind);
+        wndFilter.GetWindowText(szFind);
         for (int i = 0; i < mapPackage.GetSize(); i++)
         {
             CAssemblyNode *pNode = mapPackage.GetValueAt(i);
@@ -296,16 +289,16 @@ LRESULT CMainFrm::OnFilterChar(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, 
             {
                 for (int j = 0; j < pNode->Parent.GetSize(); j++)
                 {
-                    TreeView_SetCheckState(treeView, pNode->Parent.GetValueAt(j), TRUE);
-                    TreeView_EnsureVisible(treeView, pNode->Parent.GetValueAt(j));
+                    TreeView_SetCheckState(wndTree, pNode->Parent.GetValueAt(j), TRUE);
+                    TreeView_EnsureVisible(wndTree, pNode->Parent.GetValueAt(j));
                 }
             }
             else
             {
                 for (int j = 0; j < pNode->Parent.GetSize(); j++)
                 {
-                    TreeView_SetCheckState(treeView, pNode->Parent.GetValueAt(j), FALSE);
-                    TreeView_Expand(treeView, pNode->Parent.GetValueAt(j), TVE_COLLAPSE);
+                    TreeView_SetCheckState(wndTree, pNode->Parent.GetValueAt(j), FALSE);
+                    TreeView_Expand(wndTree, pNode->Parent.GetValueAt(j), TVE_COLLAPSE);
                 }
             }
         }
