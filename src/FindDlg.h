@@ -1,37 +1,34 @@
-#ifndef _FIND_DLG_H_
-#define _FIND_DLG_H_
+#pragma once
 
-class CFindDlg : public CWindow
+class CFindDlg : public CFindReplaceDialogImpl<CFindDlg>, public CMessageFilter
 {
 public:
-    DWORD Create(DWORD dwFlags = FR_DOWN, HWND hParent = NULL)
+    BOOL PreTranslateMessage(MSG* pMsg)
     {
-        fr.Flags |= dwFlags;
-        fr.hwndOwner = (hParent == NULL) ? ::GetActiveWindow() : hParent;
-
-        m_hWnd = ::FindText(&fr);
-        return (NULL == m_hWnd) ? ::CommDlgExtendedError() : 0;
+        HWND hWndFocus = ::GetFocus();
+        if ((m_hWnd == hWndFocus) || IsChild(hWndFocus))
+            return IsDialogMessage(pMsg);
+        return FALSE;
     }
 
-    LPFINDREPLACE GetNotifier() { return &fr; }
+    BEGIN_MSG_MAP(CFindDlg)
+        MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+        MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
+    END_MSG_MAP()
 
-private:
-    FINDREPLACE fr;
-    TCHAR szFind[MAX_PATH];
-
-public:
-    CFindDlg()
+    LRESULT OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
     {
-        memset(&szFind, 0, sizeof(szFind));
-        memset(&fr, 0, sizeof(fr));
-        fr.lStructSize = sizeof(FINDREPLACE);
-        fr.Flags = FR_NOWHOLEWORD | FR_NOUPDOWN;
-        fr.lpstrFindWhat = szFind;
-        fr.wFindWhatLen = _countof(szFind);
+        CMessageLoop* pLoop = _Module.GetMessageLoop();
+        ATLASSERT(pLoop != NULL);
+        bHandled = FALSE;
+        return pLoop->AddMessageFilter(this);
     }
-    virtual ~CFindDlg() {}
 
-    static UINT WM_FIND;
+    LRESULT OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
+    {
+        CMessageLoop* pLoop = _Module.GetMessageLoop();
+        ATLASSERT(pLoop != NULL);
+        bHandled = FALSE;
+        return pLoop->RemoveMessageFilter(this);
+    }
 };
-
-#endif // _FIND_DLG_H_

@@ -92,6 +92,7 @@
     <ClInclude Include="MainFrm.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SxsHelper.h" />
+    <ClInclude Include="Persist.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="SxsHelper.rc" />

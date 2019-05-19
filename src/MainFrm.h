@@ -1,5 +1,4 @@
-#ifndef _MAIN_DLG_H_
-#define _MAIN_DLG_H_
+Ôªø#pragma once
 
 struct CAssemblyNode;
 typedef ATL::CSimpleMap<CAtlString, CAssemblyNode *> CAssemblyMap;
@@ -7,102 +6,97 @@ typedef ATL::CSimpleMap<CAssemblyNode *, HTREEITEM> CAssemblySet;
 
 struct CAssemblyNode
 {
-    // ∑‚∞¸ Ù–‘
-    CAtlString szName;
-    CAtlString szArch;
-    CAtlString szLanguage;
-    CAtlString szVersion;
-    CAtlString szToken;
-    // —°÷–◊¥Ã¨
-    BOOL bCheck;
     CAssemblySet Parent;
     CAssemblyMap Package;
 };
 
-class CMainFrm : public CWindowImpl<CMainFrm, CWindow, CFrameWinTraits>
+class CFolderDlg : public CFolderDialogImpl<CFolderDlg>
 {
 public:
-    DECLARE_WND_CLASS_EX(TEXT("CSxsWnd"), 0, COLOR_WINDOWFRAME)
+    CFolderDlg()
+    {
+        szTitle.LoadString(IDS_SOURCE);
+        m_bi.lpszTitle = szTitle;
+        m_bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_DONTGOBELOWDOMAIN | BIF_NONEWFOLDERBUTTON;
+    }
+
+    void OnSelChanged(LPITEMIDLIST pidlSelected)
+    {
+        if (::SHGetPathFromIDList(pidlSelected, m_szFolderPath))
+        {
+            ::PathCombine(m_szFolderPath, m_szFolderPath, TEXT("Servicing\\Packages"));
+            EnableOK(::PathIsDirectory(m_szFolderPath));
+        }
+    }
+
+private:
+    CAtlString szTitle;
+};
+
+#include "FindDlg.h"
+
+class CMainFrm : public CFrameWindowImpl<CMainFrm>, public CMessageFilter
+{
+public:
+    DECLARE_FRAME_WND_CLASS(TEXT("CSxsWnd"), IDR_MAIN)
 
     BEGIN_MSG_MAP(CMainFrm)
-        MESSAGE_HANDLER(WM_CREATE, OnCreate)
-        MESSAGE_HANDLER(WM_SYSCOMMAND, OnSysCommand)
-        MESSAGE_HANDLER(WM_SIZE, OnSize)
-        MESSAGE_HANDLER(CFindDlg::WM_FIND, OnFind)
-        MESSAGE_HANDLER(WM_CONTEXTMENU, OnContext)
-        COMMAND_ID_HANDLER(IDM_EXPORT, OnExport)
-        COMMAND_ID_HANDLER(IDM_DUMP, OnExport)
-        COMMAND_ID_HANDLER(IDM_SEARCH, OnSearch)
-        COMMAND_ID_HANDLER(IDM_FRESH, OnFresh)
-        COMMAND_ID_HANDLER(IDM_FINDNEXT, OnFindNext)
-        COMMAND_ID_HANDLER(IDM_FINDPREV, OnFindPrev)
-        NOTIFY_CODE_HANDLER(TVN_ITEMCHANGED, OnChanged)
-    ALT_MSG_MAP(1)
-        MESSAGE_HANDLER(WM_CONTEXTMENU, OnContext)
-        MESSAGE_HANDLER(WM_LBUTTONUP, OnClick)
-    ALT_MSG_MAP(2)
-        MESSAGE_HANDLER(WM_CHAR, OnFilterChar)
+        MSG_WM_CREATE(OnCreate)
+        MSG_WM_DESTROY(OnDestroy)
+        MSG_WM_SYSCOMMAND(OnSysCommand)
+        MESSAGE_HANDLER_EX(CFindReplaceDialog::GetFindReplaceMsg(), OnFindCmd)
+        COMMAND_ID_HANDLER_EX(IDM_OPEN, OnOpen)
+        COMMAND_ID_HANDLER_EX(IDM_ABOUT, OnAbout)
+        COMMAND_ID_HANDLER_EX(IDM_FIND, OnFind)
+        NOTIFY_CODE_HANDLER_EX(TVN_ITEMCHANGING, OnChanging)
+        COMMAND_RANGE_HANDLER_EX(ID_FILE_MRU_FIRST, ID_FILE_MRU_LAST, OnRecent)
+        CHAIN_MSG_MAP(CFrameWindowImpl<CMainFrm>)
+        ALT_MSG_MAP(1)
+        ALT_MSG_MAP(2)
     END_MSG_MAP()
 
-public:
-    static LPCTSTR GetWndCaption();
-    /**
-    * ∂‘ª∞øÚœ‡πÿ
-    */
-    LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
-    LRESULT OnSize(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
-    LRESULT OnSysCommand(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
-    LRESULT OnFind(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
-    void OnFinalMessage(HWND /*hWnd*/);
-    /**
-    * TreeView
-    */
-    LRESULT OnChanged(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
-    LRESULT OnClick(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
-    LRESULT OnContext(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
-    /**
-    * ≤Àµ• ¬º˛
-    */
-    LRESULT OnSearch(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
-    LRESULT OnExport(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
-    LRESULT OnDump(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
-    LRESULT OnFresh(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
-    LRESULT OnFindNext(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
-    LRESULT OnFindPrev(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
-    /**
-    * …∏—°∆˜ ¬º˛
-    */
-    LRESULT OnFilterChar(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+    BOOL PreTranslateMessage(MSG* pMsg)
+    {
+        return CFrameWindowImpl<CMainFrm>::PreTranslateMessage(pMsg);
+    }
 
-    // ≤È’“∂‘ª∞øÚ¥¶¿Ì
-    inline BOOL FindMsg(LPMSG lpMsg) { return dlgFind.IsWindow() && dlgFind.IsDialogMessage(lpMsg); }
+public:
+    /**
+    * Á™óÂè£‰∫ã‰ª∂
+    */
+    int OnCreate(LPCREATESTRUCT /*lpCreate*/);
+    void OnSysCommand(UINT /*nID*/, CPoint /*pt*/);
+    void OnDestroy();
+    LRESULT OnFindCmd(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/);
+    /**
+    * ËèúÂçïÂëΩ‰ª§
+    */
+    void OnOpen(UINT /*uNotifyCode*/, int /*nID*/, HWND /*wndCtl*/);
+    void OnAbout(UINT /*uNotifyCode*/, int /*nID*/, HWND /*wndCtl*/);
+    void OnFind(UINT /*uNotifyCode*/, int /*nID*/, HWND /*wndCtl*/);
+    void OnRecent(UINT /*uNotifyCode*/, int /*nID*/, HWND /*wndCtl*/);
+    /**
+    * ÂàóË°®ÈÄöÁü•
+    */
+    LRESULT OnChanging(LPNMHDR /*pnmh*/);
 
 protected:
     /**
-    * …®√Ë∑‚∞¸œ‡πÿ
+    * Êâ´ÊèèÂ∞ÅÂåÖÁõ∏ÂÖ≥
     */
     static DWORD CALLBACK ThreadScan(LPVOID lpParam);
-    void DoInsert(HTREEITEM hParent, CAssemblyNode *pParent);
-    BOOL IsWorking();
 
 private:
+    CFont m_hFont;
     HANDLE m_hThread;
-    HMENU m_hMenu;
-    HFONT m_hFont;
-    TCHAR szExport[MAX_PATH];
-
-    typedef CWinTraitsOR<TVS_HASLINES | TVS_HASBUTTONS | TVS_LINESATROOT | TVS_CHECKBOXES> CTreeViewTraits;
-    typedef CWinTraitsOR<ES_AUTOHSCROLL, WS_EX_CLIENTEDGE> CEditTraits;
-
-    CFindDlg dlgFind;
-    CContainedWindowT<CWindow, CTreeViewTraits> wndTree;
-    CContainedWindowT<CWindow, CEditTraits> wndFilter;
-    // ∏˘Ω⁄µ„
-    CAssemblyNode nodeRoot;
+    CFindDlg *m_pFind;
+    CFolderDlg m_dlgFolder;
+    CRecentDocumentList m_mru;
+    CContainedWindowT<CTreeViewCtrl> wndTree;
+    CContainedWindowT<CComboBox> wndFilter;
+    // Ê†πËäÇÁÇπ
     CAssemblyMap mapPackage;
 
 public:
-    CMainFrm(LPCTSTR szPath);
+    CMainFrm();
 };
-
-#endif // _MAIN_DLG_H_

@@ -11,13 +11,15 @@
 #define IDS_FILTERSAVE             406
 #define IDS_FILTERHINT             407
 #define IDS_FINDEND                408
-#define IDM_ABOUT                  4001
+#define IDM_OPEN                   4001
 #define IDM_EXPORT                 4002
-#define IDM_SEARCH                 4003
-#define IDM_FRESH                  4004
-#define IDM_FINDNEXT               4005
-#define IDM_FINDPREV               4006
-#define IDM_DUMP                   4007
+#define IDM_DUMP                   4003
+#define IDM_EXIT                   4004
+#define IDM_ABOUT                  4005
+#define IDM_FIND                   4006
+#define IDM_REFRESH                4007
+#define IDM_FINDNEXT               4008
+#define IDM_FINDPREV               4009
 #ifndef IDC_STATIC
 #define IDC_STATIC                  -1
 #endif

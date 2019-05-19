@@ -18,17 +18,14 @@
     <ClCompile Include="SxsHelper.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="SxsScan.cpp">
+    <ClCompile Include="MainFrm.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="MainFrm.cpp">
+    <ClCompile Include="SxsScan.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FindDlg.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="MainFrm.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -36,6 +33,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Persist.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="FindDlg.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,26 +1,23 @@
-#ifndef _STDAFX_H_
-#define _STDAFX_H_
+#pragma once
+
+#define WINVER       0x0601
+#define _WIN32_WINNT 0x0601
 
 // ATL 头文件:
-#include <atlimage.h>
+#include <atlbase.h>
+#include <atlapp.h>
+#include <atlmisc.h>
 
-extern CComModule _Module;
+extern CAppModule _Module;
 
-#include <atlcom.h>
+#include <atlcrack.h>
+#include <atlframe.h>
+#include <atldlgs.h>
+#include <atlctrls.h>
 #include <atlcoll.h>
-#include <atlwin.h>
 
-// Windows 头文件:
-#include <shlobj.h>
-#include <shlwapi.h>
-#include <MsXml2.h>
-#include <Commdlg.h>
-
-#define HR_CHECK(_hr_) hr = _hr_; if (FAILED(hr)) { ATLTRACE(TEXT("0x%.8x\n"), hr); goto exit; }
+#define HR_CHECK(_hr_) { hr = _hr_; if (FAILED(hr)) { ATLTRACE(TEXT("0x%.8x\n"), hr); goto exit; } }
 #define BOOL_CHECK(_hr_) if (!(_hr_)) { hr = HRESULT_FROM_WIN32(::GetLastError()); ATLTRACE(TEXT("0x%.8x\n"), hr); goto exit; }
 
 #include "Resource.h"
-#include "FindDlg.h"
 #include "MainFrm.h"
-
-#endif // _STDAFX_H_

@@ -1,320 +1,164 @@
-#include "SxsHelper.h"
+ï»¿#include "SxsHelper.h"
+#include "Persist.h"
 
-// ×¢²á²éÕÒ¶Ô»°¿òÊÂ¼þ
-UINT CFindDlg::WM_FIND = ::RegisterWindowMessage(FINDMSGSTRING);
+LPCTSTR lpRegKey = _T("Software\\SxsHelper");
 
-CMainFrm::CMainFrm(LPCTSTR szPath) :
-m_hThread(NULL),
-m_hMenu(NULL),
-m_hFont(NULL)
+CMainFrm::CMainFrm() : m_hThread(NULL), m_pFind(NULL)
 {
-    ZeroMemory(&szExport, sizeof(szExport));
-    nodeRoot.szName = szPath;
 }
 
-LPCTSTR CMainFrm::GetWndCaption()
-{
-    static CAtlString szTitle;
-    if (szTitle.IsEmpty()) szTitle.LoadString(IDR_MAIN);
-    return szTitle;
-}
-
-LRESULT CMainFrm::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+int CMainFrm::OnCreate(LPCREATESTRUCT /*lpCreate*/)
 {
     HRESULT hr = S_OK;
     CAtlString szText;
-
-    // ÉèÖÃÏµÍ³²Ëµ¥
+    // è®¾ç½®ç³»ç»Ÿèœå•
     HMENU hMenu = GetSystemMenu(FALSE);
     BOOL_CHECK(szText.LoadString(IDS_ABOUT));
     BOOL_CHECK(::InsertMenu(hMenu, 0, MF_SEPARATOR, IDM_ABOUT, NULL));
     BOOL_CHECK(::InsertMenu(hMenu, 0, MF_STRING, IDM_ABOUT, szText));
-
-    // ÉèÖÃ´°ÌåÍ¼±ê
+    // è®¾ç½®çª—ä½“å›¾æ ‡
     SetIcon(::LoadIcon(_Module.m_hInst, MAKEINTRESOURCE(IDR_MAIN)));
     BOOL_CHECK(CenterWindow());
+    // åˆ›å»ºè§†å›¾
+    m_hWndClient = wndTree.Create(this, 1, m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE | TVS_HASLINES |
+        TVS_HASBUTTONS | TVS_LINESATROOT | TVS_SHOWSELALWAYS | TVS_FULLROWSELECT);
+    wndTree.SetExtendedStyle(TVS_EX_PARTIALCHECKBOXES, 0);
+    wndTree.ModifyStyle(0, TVS_CHECKBOXES);
+    // åˆ›å»ºæœç´¢æ 
+    BOOL_CHECK(wndFilter.Create(this, 2, m_hWnd, rcDefault, NULL, WS_CHILD | WS_VISIBLE |
+        WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBS_DROPDOWN | CBS_AUTOHSCROLL));
+    BOOL_CHECK(CreateSimpleReBar(ATL_SIMPLE_REBAR_NOBORDER_STYLE));
+    BOOL_CHECK(AddSimpleReBarBand(wndFilter, NULL, TRUE));
+    BOOL_CHECK(CreateSimpleStatusBar());
+    // è¯»å–ä¹‹å‰çª—å£ä½ç½®
+    if (FAILED(CPlacementPersist(lpRegKey).Restore(m_hWnd))) CenterWindow();
 
-    HDC hDC = GetDC();
-    int nSize = ::MulDiv(16, ::GetDeviceCaps(hDC, LOGPIXELSY), 72);
-    ReleaseDC(hDC);
-    m_hFont = ::CreateFont(nSize, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
-        CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, TEXT("MS Shell Dlg"));
-    BOOL_CHECK(m_hFont);
+    HMENU hMruMenu = ::GetSubMenu(GetMenu(), 0);
+    m_mru.SetMenuHandle(hMruMenu);
+    m_mru.ReadFromRegistry(lpRegKey);
 
-    // ¼ÓÔØ²Ëµ¥×ÊÔ´
-    m_hMenu = ::LoadMenu(_Module.m_hInst, MAKEINTRESOURCE(IDR_MAIN));
-    BOOL_CHECK(m_hMenu);
+    CMessageLoop* pLoop = _Module.GetMessageLoop();
+    ATLASSERT(pLoop != NULL);
+    pLoop->AddMessageFilter(this);
 
-    BOOL_CHECK(wndTree.Create(WC_TREEVIEW, this, 1, m_hWnd, NULL));
-
-    // ´´½¨ É¸Ñ¡Æ÷ ¿Ø¼þ
-    BOOL_CHECK(szText.LoadString(IDS_FILTERHINT));
-    BOOL_CHECK(wndFilter.Create(WC_EDIT, this, 2, wndTree, NULL));
-    wndFilter.SendMessage(EM_SETCUEBANNER, TRUE, (LPARAM)szText.GetString());
-    wndFilter.SendMessage(EM_LIMITTEXT, MAX_PATH);
-    wndFilter.SetFont(m_hFont);
-
-    // ´Ó»ñÈ¡Ä¬ÈÏ±£´æÂ·¾¶
-    BOOL_CHECK(::SHGetSpecialFolderPath(m_hWnd, szExport, CSIDL_MYDOCUMENTS, TRUE));
-    // ´´½¨É¨ÃèÏß³Ì
-    m_hThread = ::CreateThread(NULL, 0, CMainFrm::ThreadScan, this, 0, NULL);
-    BOOL_CHECK(m_hThread);
 exit:
-    // ·µ»Ø -1 ±íÊ¾´°¿Ú´´½¨Ê§°Ü
+    // è¿”å›ž -1 è¡¨ç¤ºçª—å£åˆ›å»ºå¤±è´¥
     return SUCCEEDED(hr) ? 0 : -1;
 }
 
-void CMainFrm::OnFinalMessage(HWND /*hWnd*/)
+void CMainFrm::OnDestroy()
 {
-    if (NULL != m_hFont) ::DeleteObject(m_hFont);
-    // ÊÍ·Å²Ëµ¥×ÊÔ´
-    if (NULL != m_hMenu) ::DestroyMenu(m_hMenu);
+    CMessageLoop* pLoop = _Module.GetMessageLoop();
+    ATLASSERT(pLoop != NULL);
+    pLoop->RemoveMessageFilter(this);
+
+    if (NULL != m_pFind) m_pFind->SendMessage(WM_CLOSE);
+
+    CPlacementPersist(lpRegKey).Save(m_hWnd);
     ::PostQuitMessage(0);
 }
 
-LRESULT CMainFrm::OnSize(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
+void CMainFrm::OnSysCommand(UINT nID, CPoint /*pt*/)
 {
-    wndTree.ResizeClient(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-    return wndFilter.SetWindowPos(HWND_TOP, GET_X_LPARAM(lParam) - 180, 0, 180, 25, 0);
-}
-
-LRESULT CMainFrm::OnSysCommand(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& bHandled)
-{
-    switch (LOWORD(wParam))
+    switch (nID)
     {
     case IDM_ABOUT:
-    {
-        ATL::CSimpleDialog<IDD_ABOUT> dlgAbout;
-        return dlgAbout.DoModal(m_hWnd);
-    }
-    case SC_CLOSE:
-        bHandled = IsWorking();
+        OnAbout(0, nID, m_hWnd);
         break;
+    case SC_CLOSE:
+        if (NULL != m_hThread && ::WaitForSingleObject(m_hThread, 0) == WAIT_TIMEOUT)
+        {
+            CAtlString szText;
+            szText.LoadString(IDS_BUSY);
+            MessageBox(szText, NULL, MB_ICONWARNING);
+            break;
+        }
     default:
-        bHandled = FALSE;
+        SetMsgHandled(FALSE);
     }
-    return S_OK;
 }
 
-/**
- * ²éÕÒÏà¹ØÂß¼­
- */
-LRESULT CMainFrm::OnFind(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
+LRESULT CMainFrm::OnFindCmd(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/)
 {
-    LPFINDREPLACE pfr = (LPFINDREPLACE)lParam;
-    if (pfr->Flags & FR_DIALOGTERM)
+    if (m_pFind != NULL)
     {
-        dlgFind.m_hWnd = NULL;
-        pfr->Flags &= ~FR_DIALOGTERM;
-        return TRUE;
-    }
-
-    TCHAR szText[MAX_PATH] = { 0 };
-    TVITEM tvi = { TVIF_TEXT };
-    tvi.pszText = szText;
-    tvi.cchTextMax = _countof(szText);
-    // »ñÈ¡µ±Ç°µÄ½Úµã
-    tvi.hItem = TreeView_GetSelection(wndTree);
-    if (NULL != pfr->lCustData) TreeView_SetItemState(wndTree, (HTREEITEM)pfr->lCustData, 0, TVIS_BOLD);
-
-    PTSTR(WINAPI *pStrStr)(PCTSTR, PCTSTR) = (pfr->Flags & FR_MATCHCASE) ? ::StrStr : ::StrStrI;
-
-    // ÏòÇ°ËÑË÷
-    if (NULL == tvi.hItem) tvi.hItem = TreeView_GetRoot(wndTree);
-    do
-    {
-        pfr->lCustData = (LPARAM)TreeView_GetChild(wndTree, tvi.hItem);
-        while (NULL == pfr->lCustData && NULL != tvi.hItem)
+        if (m_pFind->IsTerminating())
         {
-            pfr->lCustData = (LPARAM)TreeView_GetNextSibling(wndTree, tvi.hItem);
-            if (NULL == pfr->lCustData) tvi.hItem = TreeView_GetParent(wndTree, tvi.hItem);
+            m_pFind = NULL;
+            return S_OK;
         }
-        if (NULL == pfr->lCustData) break;
-        tvi.hItem = (HTREEITEM)pfr->lCustData;
-        TreeView_GetItem(wndTree, &tvi);
-    } while (pStrStr(szText, pfr->lpstrFindWhat) == NULL);
 
-    if (NULL != pfr->lCustData)
-    {
-        TreeView_SetItemState(wndTree, tvi.hItem, TVIS_BOLD, TVIS_BOLD);
-        return TreeView_SelectItem(wndTree, tvi.hItem);
-    }
-    // ÌáÊ¾Ã»ÓÐÕÒµ½
-    CAtlString szEnd;
-    szEnd.Format(IDS_FINDEND, pfr->lpstrFindWhat);
-    return dlgFind.MessageBox(szEnd, CMainFrm::GetWndCaption(), MB_ICONWARNING);
-}
-
-LRESULT CMainFrm::OnFindNext(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& bHandled)
-{
-    LPFINDREPLACE pfr = dlgFind.GetNotifier();
-    if (pfr->lpstrFindWhat[0] == TEXT('\0')) return FALSE;
-
-    pfr->Flags |= FR_DOWN;
-    return OnFind(WM_COMMAND, 0, (LPARAM)pfr, bHandled);
-}
-
-LRESULT CMainFrm::OnFindPrev(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& bHandled)
-{
-    LPFINDREPLACE pfr = dlgFind.GetNotifier();
-    if (pfr->lpstrFindWhat[0] == TEXT('\0')) return FALSE;
-
-    pfr->Flags &= ~FR_DOWN;
-    return OnFind(WM_COMMAND, 0, (LPARAM)pfr, bHandled);
-}
-
-/**
-* Ê÷½Úµã¼¶ÁªÑ¡ÖÐ
-*/
-LRESULT CMainFrm::OnChanged(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/)
-{
-    NMTVITEMCHANGE *pChange = (NMTVITEMCHANGE *)pnmh;
-    CAssemblyNode *pNode = reinterpret_cast<CAssemblyNode *>(pChange->lParam);
-    if (NULL == pNode) return S_OK;
-
-    BOOL bChecked = (pChange->uStateNew >> 12) == 2 ? TRUE : FALSE;
-    if (bChecked == pNode->bCheck) return S_OK;
-    // Ê÷½Úµã¼¶ÁªÑ¡ÖÐ
-    pNode->bCheck = bChecked;
-    for (int i = 0; i < pNode->Package.GetSize(); i++)
-    {
-        CAssemblyNode *pChild = pNode->Package.GetValueAt(i);
-        for (int j = 0; j < pChild->Parent.GetSize(); j++)
+        if (m_pFind->FindNext())
         {
-            TreeView_SetCheckState(pnmh->hwndFrom, pChild->Parent.GetValueAt(j), bChecked);
+            
         }
     }
     return S_OK;
 }
 
-LRESULT CMainFrm::OnClick(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
+void CMainFrm::OnOpen(UINT /*uNotifyCode*/, int /*nID*/, HWND /*wndCtl*/)
 {
-    TVHITTESTINFO ht = { { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) } };
-    wndTree.ScreenToClient(&ht.pt);
-
-    if (!TreeView_HitTest(wndTree, &ht) || (ht.flags & TVHT_ONITEMLABEL) == 0) return S_OK;
-
-    TVITEM tvi = { 0 };
-    tvi.hItem = ht.hItem;
-    tvi.mask = TVIF_PARAM;
-    if (!TreeView_GetItem(wndTree, &tvi)) return S_OK;
-
-    TCHAR szWinSxS[MAX_PATH];
-    ::PathCombine(szWinSxS, nodeRoot.szName, TEXT("WinSxS\\Manifests"));
-    return S_OK;
-}
-
-LRESULT CMainFrm::OnContext(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
-{
-    return ::TrackPopupMenu(::GetSubMenu(m_hMenu, 0), TPM_LEFTALIGN | TPM_LEFTBUTTON, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), 0, m_hWnd, NULL);
-}
-
-LRESULT CMainFrm::OnExport(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
-{
-    CAtlString szFilter;
-    TCHAR szExport[MAX_PATH] = { 0 };
-    szFilter.LoadString(IDS_FILTERSAVE);
-    szFilter.Replace(TEXT('|'), TEXT('\0'));
-    ::PathCombine(szExport, szExport, (wID == IDM_EXPORT) ? TEXT("Remove.txt") : TEXT("Dump.txt"));
-   
-    OPENFILENAME ofn = { sizeof(OPENFILENAME) };
-    ofn.hwndOwner = m_hWnd;
-    ofn.lpstrFilter = szFilter;
-    ofn.lpstrDefExt = TEXT("txt");
-    ofn.Flags = OFN_OVERWRITEPROMPT | OFN_EXPLORER;
-    ofn.nMaxFile = MAX_PATH;
-    ofn.lpstrFile = szExport;
-
-    if (!::GetSaveFileName(&ofn)) return FALSE;
-
-    HANDLE hFile = ::CreateFile(szExport, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (INVALID_HANDLE_VALUE == hFile)
+    if (m_dlgFolder.DoModal(m_hWnd) == IDOK)
     {
-        szFilter.Format(IDS_ERROR, ::GetLastError());
-        return MessageBox(szFilter, CMainFrm::GetWndCaption(), MB_ICONERROR);
+        m_hThread = ::CreateThread(NULL, 0, CMainFrm::ThreadScan, this, 0, NULL);
+        m_mru.AddToList(m_dlgFolder.m_szFolderPath);
+        m_mru.WriteToRegistry(lpRegKey);
     }
+}
 
-    CHAR szName[MAX_PATH + 2];
-    for (int i = 0; i < mapPackage.GetSize(); i++)
+void CMainFrm::OnAbout(UINT /*uNotifyCode*/, int /*nID*/, HWND /*wndCtl*/)
+{
+    ATL::CSimpleDialog<IDD_ABOUT> dlgAbout;
+    dlgAbout.DoModal(m_hWnd);
+}
+
+void CMainFrm::OnFind(UINT /*uNotifyCode*/, int /*nID*/, HWND /*wndCtl*/)
+{
+    if (m_pFind == NULL)
     {
-        CAssemblyNode *pNode = mapPackage.GetValueAt(i);
-        if (pNode->bCheck)
+        m_pFind = new CFindDlg();
+        m_pFind->Create(TRUE, NULL, NULL, FR_DOWN, m_hWnd);
+    }
+    m_pFind->SetActiveWindow();
+    m_pFind->ShowWindow(SW_SHOW);
+}
+
+void CMainFrm::OnRecent(UINT /*uNotifyCode*/, int nID, HWND /*wndCtl*/)
+{
+    if (m_mru.GetFromList(nID, m_dlgFolder.m_szFolderPath, _countof(m_dlgFolder.m_szFolderPath)))
+    {
+        if (!::PathIsDirectory(m_dlgFolder.m_szFolderPath))
         {
-            BOOL bCheck = TRUE;
-            for (int j = 0; j < pNode->Parent.GetSize(); j++) if (pNode->Parent.GetKeyAt(j)->bCheck) bCheck = FALSE;
-           // for (size_t j = 0; j < pNode->Depend.GetCount(); j++) if (pNode->Depend.GetAt(j)->bCheck) bCheck = FALSE;
-            if (bCheck || wID == IDM_DUMP)
-            {
-                DWORD cbLen = (DWORD)sprintf_s(szName, _countof(szName), "%ws\r\n", (LPCTSTR)pNode->szName);
-                ::WriteFile(hFile, szName, cbLen, &cbLen, NULL);
-            }
+            m_mru.RemoveFromList(nID);
+            m_mru.WriteToRegistry(lpRegKey);
+        }
+        else if (NULL == m_hThread)
+        {
+            m_hThread = ::CreateThread(NULL, 0, CMainFrm::ThreadScan, this, 0, NULL);
+            m_mru.MoveToTop(nID);
+            m_mru.WriteToRegistry(lpRegKey);
         }
     }
-   
-    return ::CloseHandle(hFile);
 }
 
-LRESULT CMainFrm::OnSearch(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
+LRESULT CMainFrm::OnChanging(LPNMHDR pnmh)
 {
-    // Ê÷Îª¿Õ²»ÄÜ²éÕÒ
-    if (mapPackage.GetSize() == 0) return FALSE;
-    if (IsWorking()) return FALSE;
-    if (NULL != dlgFind.m_hWnd && dlgFind.IsWindow()) return TRUE;
-    return dlgFind.Create(FR_DOWN, m_hWnd);
-}
-
-LRESULT CMainFrm::OnFresh(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
-{
-    if (IsWorking()) return FALSE;
-
-    // É¾³ý½Úµã
-    TreeView_DeleteAllItems(wndTree);
-    nodeRoot.Package.RemoveAll();
-    mapPackage.RemoveAll();
-    // ´´½¨É¨ÃèÏß³Ì
-    m_hThread = ::CreateThread(NULL, 0, CMainFrm::ThreadScan, this, 0, NULL);
+    NMTVITEMCHANGE *pnvc = reinterpret_cast<NMTVITEMCHANGE*>(pnmh);
+    if (pnvc->lParam == NULL) return TRUE;
+    // é€‰ä¸­çŠ¶æ€
+    UINT uCheck = pnvc->uStateNew >> 12;
+    // çˆ¶èŠ‚ç‚¹
+    if ((pnvc->uStateOld >> 12) & ~uCheck)
+    {
+        HTREEITEM hItem = wndTree.GetChildItem(pnvc->hItem);
+        while (hItem != NULL)
+        {
+            wndTree.SetCheckState(hItem, uCheck - 1);
+            hItem = wndTree.GetNextSiblingItem(hItem);
+        }
+        return FALSE;
+    }
+    HTREEITEM hItem = wndTree.GetParentItem(pnvc->hItem);
+    if (hItem != NULL) wndTree.SetCheckState(hItem, FALSE);
     return TRUE;
-}
-
-LRESULT CMainFrm::OnFilterChar(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& bHandled)
-{
-    if (VK_RETURN == wParam)
-    {
-        CAtlString szFind;
-        wndFilter.GetWindowText(szFind);
-        for (int i = 0; i < mapPackage.GetSize(); i++)
-        {
-            CAssemblyNode *pNode = mapPackage.GetValueAt(i);
-            if (::StrStrI(pNode->szName, szFind) != NULL)
-            {
-                for (int j = 0; j < pNode->Parent.GetSize(); j++)
-                {
-                    TreeView_SetCheckState(wndTree, pNode->Parent.GetValueAt(j), TRUE);
-                    TreeView_EnsureVisible(wndTree, pNode->Parent.GetValueAt(j));
-                }
-            }
-            else
-            {
-                for (int j = 0; j < pNode->Parent.GetSize(); j++)
-                {
-                    TreeView_SetCheckState(wndTree, pNode->Parent.GetValueAt(j), FALSE);
-                    TreeView_Expand(wndTree, pNode->Parent.GetValueAt(j), TVE_COLLAPSE);
-                }
-            }
-        }
-        return TRUE;
-    }
-    bHandled = FALSE;
-    return TRUE;
-}
-
-BOOL CMainFrm::IsWorking()
-{
-    if (NULL != m_hThread && ::WaitForSingleObject(m_hThread, 0) == WAIT_TIMEOUT)
-    {
-        CAtlString szText;
-        szText.LoadString(IDS_BUSY);
-        return MessageBox(szText, CMainFrm::GetWndCaption(), MB_ICONWARNING);
-    }
-    return FALSE;
 }
