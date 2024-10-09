@@ -48,7 +48,7 @@ HRESULT QueryList(IXMLDOMElement* pRoot, BSTR queryString, CAssemblyMap& mapNode
 /**
 * 递归插入TreeView
 */
-void TreeInsert(HTREEITEM hParent, CAssemblyNode *pParent, HWND hTree)
+void TreeInsert(HTREEITEM hParent, CAssemblyNode *pParent, HWND hTree, const ATL::CString& szParent)
 {
     TV_INSERTSTRUCT tvi;
     ZeroMemory(&tvi, sizeof(tvi));
@@ -59,12 +59,14 @@ void TreeInsert(HTREEITEM hParent, CAssemblyNode *pParent, HWND hTree)
     for (int i = 0; i < pParent->Package.GetSize(); i++)
     {
         CAssemblyNode *pChild = pParent->Package.GetValueAt(i);
-        tvi.item.pszText = (LPTSTR)pParent->Package.GetKeyAt(i).GetString();
+		ATL::CString& szName = pParent->Package.GetKeyAt(i);
+		if (!szName.Compare(szParent)) continue;
+		tvi.item.pszText = (LPTSTR)szName.GetString();
         tvi.item.lParam = reinterpret_cast<LPARAM>(pChild);
         HTREEITEM hItem = TreeView_InsertItem(hTree, &tvi);
         pChild->Parent.SetAt(pParent, hItem);
         // 添加到搜索容器
-        if (pChild->Package.GetSize() > 0) TreeInsert(hItem, pChild, hTree);
+		if (pChild->Package.GetSize() > 0) TreeInsert(hItem, pChild, hTree, szName);
     }
 }
 
@@ -150,11 +152,12 @@ DWORD CALLBACK CMainFrm::ThreadScan(LPVOID lpParam)
         CAssemblyNode *pNode = pT->mapPackage.GetValueAt(i);
         if (pNode->Parent.GetSize() == 0)
         {
-            tvi.item.pszText = (LPTSTR)pT->mapPackage.GetKeyAt(i).GetString();
+			ATL::CString& szName = pT->mapPackage.GetKeyAt(i);
+			tvi.item.pszText = (LPTSTR)szName.GetString();
             tvi.item.lParam = reinterpret_cast<LPARAM>(pNode);
             HTREEITEM hRoot = pT->wndTree.InsertItem(&tvi);
             if (pNode->Package.GetSize() > 0)
-                TreeInsert(hRoot, pNode, pT->wndTree);
+				TreeInsert(hRoot, pNode, pT->wndTree, szName);
         }
     }
     CStatusBarCtrl(pT->m_hWndStatusBar).SetText(0, pT->m_dlgFolder.GetFolderPath());
