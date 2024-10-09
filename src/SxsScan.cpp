@@ -92,6 +92,7 @@ void CMainDlg::RecurveInsert(HTREEITEM hParent, CAssemblyNode *pParent)
     for (size_t i = 0; i < pParent->Package.GetCount(); i++)
     {
         CAssemblyNode *pChild = pParent->Package.GetAt(i);
+        if (!pChild->szName.Compare(pParent->szName)) continue;
         tvi.item.pszText = pChild->szName.GetBuffer();
         tvi.item.lParam = reinterpret_cast<LPARAM>(pChild);
         HTREEITEM hItem = TreeView_InsertItem(m_tree, &tvi);
