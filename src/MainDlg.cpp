@@ -319,16 +319,20 @@ LRESULT CMainDlg::OnFilterChar(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, 
             {
                 for (int j = 0; j < pNode->Parent.GetSize(); j++)
                 {
-                    TreeView_SetCheckState(m_tree, pNode->Parent.GetValueAt(j), TRUE);
-                    TreeView_EnsureVisible(m_tree, pNode->Parent.GetValueAt(j));
+                    HTREEITEM hItem = pNode->Parent.GetValueAt(j);
+                    TreeView_SetItemState(m_tree, hItem, TVIS_BOLD, TVIS_BOLD);
+                    TreeView_SetCheckState(m_tree, hItem, TRUE);
+                    TreeView_EnsureVisible(m_tree, hItem);
                 }
             }
             else
             {
                 for (int j = 0; j < pNode->Parent.GetSize(); j++)
                 {
-                    TreeView_SetCheckState(m_tree, pNode->Parent.GetValueAt(j), FALSE);
-                    TreeView_Expand(m_tree, pNode->Parent.GetValueAt(j), TVE_COLLAPSE);
+                    HTREEITEM hItem = pNode->Parent.GetValueAt(j);
+                    TreeView_SetItemState(m_tree, hItem, 0, TVIS_BOLD);
+                    TreeView_SetCheckState(m_tree, hItem, FALSE);
+                    TreeView_Expand(m_tree, hItem, TVE_COLLAPSE);
                 }
             }
         }

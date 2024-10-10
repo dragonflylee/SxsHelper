@@ -55,7 +55,8 @@ int Run(HINSTANCE hInst, int nCmdShow)
     szText.ReleaseBuffer();
 
     CMainDlg wndMain(szText);
-    HWND hWnd = wndMain.Create(HWND_DESKTOP);
+    RECT rcWnd = {0, 0, 600, 500};
+    HWND hWnd = wndMain.Create(HWND_DESKTOP, rcWnd);
     if (NULL == hWnd)
     {
         szText.Format(IDS_ERROR, ::GetLastError());
